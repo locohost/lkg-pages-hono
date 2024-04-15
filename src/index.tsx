@@ -2,7 +2,6 @@ import { Hono, Context, Next } from 'hono';
 import type { KVNamespace } from '@cloudflare/workers-types';
 import { renderer } from './renderer';
 import { getCookie, setCookie } from 'hono/cookie';
-import { nanoid } from 'nanoid';
 import { LoginPage } from './pages/login';
 import { SignupPage } from './pages/signup';
 
@@ -82,12 +81,14 @@ app.post('/login/password', async function (c) {
 	const user: User = JSON.parse(userStr);
 	///TODO: Validate user.del and user.lockedReason props
 	const pass = await hashPassword(plainPass, c.env.SALT);
+	console.log('user.pass: ', user.pass);
+	console.log('input pass: ', pass);
 	if (user.pass != pass) {
 		///TODO: Increment user.loginFails
 		///TODO: If user.loginFails > 2 then set user.lockedReason
 		return c.body('Invalid password', 401);
 	}
-	const sessId = nanoid();
+	const sessId = crypto.randomUUID();
 	// Expire session in 3 hrs
 	const d = new Date();
 	const expMilliseconds = Math.round(d.getTime() + (3 * 60 * 60 * 1000))
