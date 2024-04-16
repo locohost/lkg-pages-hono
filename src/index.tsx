@@ -1,9 +1,8 @@
-import { Hono, Context, Next } from 'hono';
+import { Hono } from 'hono';
 import type { KVNamespace } from '@cloudflare/workers-types';
 import { renderer } from './renderer';
 import type { User, Sess } from "./types";
-import { getCookie, setCookie } from 'hono/cookie';
-import { sessionAuth, hashPassword, createSession } from './auth';
+import { sessionAuth, hashPassword, createSession, createUser } from './auth';
 import { LoginPage } from './pages/login';
 import { SignupPage } from './pages/signup';
 
@@ -38,17 +37,12 @@ app.post('/signup', async function (c) {
 	console.log('Inside POST/signup route');
 	const body = await c.req.parseBody();
 	///TODO: Validate chars in following creds
+	///TODO: Validate pass & confirm match
 	///TODO: Validate username and email are unique
 	const username = body['username'] as string;
 	const email = body['email'] as string;
 	const plainPass = body['password'] as string;
-	// Save new User to KV
-	const { pass, salt } = await hashPassword(plainPass);
-	const user: User = {
-		email, pass, salt, created: new Date(), loginFails: 0, lastLogin: new Date(), lockedReason: '', del: false
-	};
-	console.log('user', user);
-	await c.env.SESSION.put(`USER:${username}`, JSON.stringify(user));
+	await createUser(c.env.SESSION, username, email, plainPass);
 	return c.text(`Signup success--Welcome '${username}'!`, 200);
 });
 

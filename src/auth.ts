@@ -34,6 +34,28 @@ export async function hashPassword(
   return { pass, salt };
 }
 
+export async function createUser(
+  cfKV: KVNamespace,
+  username: string,
+  email: string,
+  plainPass: string
+) {
+  // Save new User to KV
+  const { pass, salt } = await hashPassword(plainPass);
+  const user: User = {
+    email,
+    pass,
+    salt,
+    created: new Date(),
+    loginFails: 0,
+    lastLogin: new Date(),
+    lockedReason: "",
+    del: false,
+  };
+  console.log("user", user);
+  await cfKV.put(`USER:${username}`, JSON.stringify(user));
+}
+
 export async function createSession(
   c: Context,
   cfKV: KVNamespace,
