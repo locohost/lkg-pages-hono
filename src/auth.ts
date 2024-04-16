@@ -1,23 +1,23 @@
-import { Context, Next } from "hono";
-import type { KVNamespace } from "@cloudflare/workers-types";
-import { getCookie, setCookie } from "hono/cookie";
-import type { User, Sess } from "./types";
+import { Context, Next } from 'hono';
+import type { KVNamespace } from '@cloudflare/workers-types';
+import { getCookie, setCookie } from 'hono/cookie';
+import type { User, Sess } from './types';
 
 export async function sessionAuth(c: Context, next: Next) {
-  const sessId = getCookie(c, "session");
-  console.log("sessionAuth sessId: ", sessId);
+  const sessId = getCookie(c, 'session');
+  console.log('sessionAuth sessId: ', sessId);
   if (sessId == null) {
-    return c.redirect("/login", 302);
+    return c.redirect('/login', 302);
   }
   const username: string = await c.env.SESSION.get(`SESS:${sessId}`);
   const userStr: string = await c.env.SESSION.get(`USER:${username}`);
   const user: User = userStr != null ? JSON.parse(userStr) : null;
   const sess = { id: sessId, username: username, email: user.email } as Sess;
-  c.set("sess", sess);
+  c.set('sess', sess);
   return await next();
 }
 
-export async function hashPassword(
+export async function getHashedPasswordAndSalt(
   plainPass: string,
   salt?: string
 ): Promise<{ pass: string; salt: string }> {
@@ -27,7 +27,7 @@ export async function hashPassword(
   }
   const myText = new TextEncoder().encode(plainPass + salt);
   const myDigest = await crypto.subtle.digest(
-    { name: "SHA-256" },
+    { name: 'SHA-256' },
     myText // The data you want to hash as an ArrayBuffer
   );
   const pass = hexStrFromArrBuff(myDigest);
@@ -35,53 +35,73 @@ export async function hashPassword(
 }
 
 export async function createUser(
-  cfKV: KVNamespace,
+  c: Context,
+  kvNamespace: string,
   username: string,
   email: string,
   plainPass: string
 ) {
   // Save new User to KV
-  const { pass, salt } = await hashPassword(plainPass);
+  const KV = c.env[kvNamespace] as KVNamespace;
+  const { pass, salt } = await getHashedPasswordAndSalt(plainPass);
   const user: User = {
     email,
     pass,
     salt,
-    created: new Date(),
     loginFails: 0,
+    lastLoginIp: null,
     lastLogin: new Date(),
-    lockedReason: "",
+    lockedReason: null,
+    created: new Date(),
+		updated: null,
     del: false,
   };
-  console.log("user", user);
-  await cfKV.put(`USER:${username}`, JSON.stringify(user));
+  console.log('auth.createUser user: ', user);
+  await KV.put(`USER:${username}`, JSON.stringify(user));
 }
 
 export async function createSession(
   c: Context,
-  cfKV: KVNamespace,
+  kvNamespace: string,
   username: string,
   expireHrs: number
 ): Promise<string> {
+  const KV = c.env[kvNamespace] as KVNamespace;
   const sessId = crypto.randomUUID();
-  // Expire session in 3 hrs
   const d = new Date();
   const expMilliseconds = Math.round(d.getTime() + expireHrs * 60 * 60 * 1000);
   const expSeconds = expMilliseconds / 1000;
-  setCookie(c, "session", sessId, {
-    path: "/",
+  setCookie(c, 'session', sessId, {
+    path: '/',
     secure: true,
     httpOnly: true,
     expires: new Date(expMilliseconds),
   });
-  await cfKV.put(`SESS:${sessId}`, username, {
-    expiration: expSeconds,
-  });
+  await KV.put(`SESS:${sessId}`, username, { expiration: expSeconds });
   return sessId;
+}
+
+export async function verifyPasswordEnteredGetUser(
+  c: Context,
+  kvNamespace: string,
+  username: string,
+  plainPass: string
+): Promise<{ user: User | null; error: string | null }> {
+  const KV = c.env[kvNamespace] as KVNamespace;
+  const userStr = await KV.get(`USER:${username}`);
+  if (userStr == null) {
+    return { user: null, error: 'Invalid username' };
+  }
+  const user = JSON.parse(userStr) as User;
+  const { pass } = await getHashedPasswordAndSalt(plainPass, user.salt);
+  return user.pass == pass
+    ? { user, error: null }
+    : { user, error: 'Invalid password' };
 }
 
 function hexStrFromArrBuff(myBuffer: ArrayBuffer): string {
   const hexString = [...new Uint8Array(myBuffer)]
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
   return hexString;
 }
