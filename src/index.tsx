@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import type { KVNamespace } from '@cloudflare/workers-types';
 import { renderer } from './renderer';
-import type { User, Sess } from "./types";
 import { sessionAuth, hashPassword, createSession, createUser } from './auth';
+import type { User, Sess } from "./types";
 import { LoginPage } from './pages/login';
 import { SignupPage } from './pages/signup';
 
