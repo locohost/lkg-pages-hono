@@ -15,6 +15,7 @@ export type Sess = {
   id: string;
   username: string;
   email: string;
+	csrfToken: string;
 };
 
 export type Env = {

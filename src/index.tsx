@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import { renderer } from './renderer';
-import { sessionAuth } from './auth';
+import { renderer } from './pages/renderer';
+import { sessionAuth } from './lib/auth';
 import type { Env,Vars } from "./types";
 import authRoutes from './routes/auth-routes';
 

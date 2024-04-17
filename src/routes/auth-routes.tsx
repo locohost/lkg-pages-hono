@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import { createSession, createUser, verifyPasswordEnteredGetUser } from '../auth';
-import { renderer } from '../renderer';
+import { createSession, createUser, verifyPasswordEnteredGetUser } from '../lib/auth';
+import { renderer } from '../pages/renderer';
 import { LoginPage } from '../pages/login';
 import { SignupPage } from '../pages/signup';
 import type { Env, Vars } from "../types";

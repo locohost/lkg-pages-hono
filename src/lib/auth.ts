@@ -1,20 +1,29 @@
 import { Context, Next } from 'hono';
 import type { KVNamespace } from '@cloudflare/workers-types';
 import { getCookie, setCookie } from 'hono/cookie';
-import type { User, Sess } from './types';
+import type { User, Sess } from '../types';
 
 export async function sessionAuth(c: Context, next: Next) {
-  const sessId = getCookie(c, 'session');
-  console.log('sessionAuth sessId: ', sessId);
-  if (sessId == null) {
-    return c.redirect('/login', 302);
-  }
-  const username: string = await c.env.SESSION.get(`SESS:${sessId}`);
-  const userStr: string = await c.env.SESSION.get(`USER:${username}`);
-  const user: User = userStr != null ? JSON.parse(userStr) : null;
-  const sess = { id: sessId, username: username, email: user.email } as Sess;
+  const sess = await getSessionFromCookie(c, 'SESSION');
+  if (sess == null) return c.redirect('/login', 302);
   c.set('sess', sess);
   return await next();
+}
+
+export async function getSessionFromCookie(
+  c: Context,
+  kvNamespace: string
+): Promise<Sess | null> {
+  const sessId = getCookie(c, 'session');
+  console.log('auth.getSession sessId: ', sessId);
+  if (sessId == null) return null;
+  const username = await c.env[kvNamespace].get(`SESS:${sessId}`);
+	if (username == null) return null;
+  const userStr = await c.env[kvNamespace].get(`USER:${username}`);
+	if (userStr == null) return null;
+  const user = JSON.parse(userStr) as User;
+	///TODO: Check user.lockedReason and user.del
+  return { id: sessId, username: username, email: user.email } as Sess;
 }
 
 export async function getHashedPasswordAndSalt(
@@ -53,7 +62,7 @@ export async function createUser(
     lastLogin: new Date(),
     lockedReason: null,
     created: new Date(),
-		updated: null,
+    updated: null,
     del: false,
   };
   console.log('auth.createUser user: ', user);
