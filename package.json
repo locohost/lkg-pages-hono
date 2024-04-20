@@ -1,10 +1,10 @@
 {
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "deploy:prev": "vite build && wrangler pages deploy --branch preview",
-    "deploy:prod": "vite build && wrangler pages deploy --branch production"
+    "dev": "tailwindcss -i ./src/input.css -o ./public/static/css/styles.css && vite",
+    "build": "tailwindcss -i ./src/input.css -o ./public/static/css/styles.css && vite build",
+    "deploy:prev": "tailwindcss -i ./src/input.css -o ./public/static/css/styles.css && vite build && wrangler pages deploy --branch preview",
+    "deploy:prod": "tailwindcss -i ./src/input.css -o ./public/static/css/styles.css && vite build && wrangler pages deploy --branch production"
   },
   "dependencies": {
     "hono": "^4.2.4"
@@ -13,6 +13,8 @@
     "@cloudflare/workers-types": "^4.20240403.0",
     "@hono/vite-cloudflare-pages": "^0.2.4",
     "@hono/vite-dev-server": "^0.11.0",
+    "daisyui": "^4.10.2",
+    "tailwindcss": "^3.4.3",
     "vite": "^5.0.12",
     "wrangler": "^3.47.0"
   }

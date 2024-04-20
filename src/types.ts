@@ -1,4 +1,5 @@
 export type User = {
+	handle:string;
   email: string;
   pass: string;
   salt: string;
@@ -15,16 +16,17 @@ export type Sess = {
   id: string;
   username: string;
   email: string;
-	csrfToken: string;
 };
 
 export type Env = {
+	ASSETS: Fetcher,
 	SESSION: KVNamespace,
 	SESS_SECRET: string,
 	SALT: string
 }
 
 export type Vars = {
-	sess: Sess
+	sess: Sess,
+	csrfTkn: string
 }
 

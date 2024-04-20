@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
-import { createSession, createUser, verifyPasswordEnteredGetUser } from '../lib/auth';
+import { createSession, verifyPasswordReturnUser } from '../lib/auth';
 import { renderer } from '../pages/renderer';
 import { LoginPage } from '../pages/login';
 import { SignupPage } from '../pages/signup';
 import type { Env, Vars } from "../types";
+import { repoUserCreate } from '../repos/user-repo';
 
 const app = new Hono<{ Bindings: Env, Variables: Vars }>();
 app.use(renderer);
@@ -11,6 +12,7 @@ app.use(renderer);
 app.get('/signup', function (c) {
 	console.log('Inside GET/signup route');
 	const tkn = crypto.randomUUID();
+	c.set('csrfTkn', tkn)
 	return c.render(<SignupPage csrfToken={tkn} />);
 });
 
@@ -20,25 +22,36 @@ app.post('/signup', async function (c) {
 	///TODO: Validate chars in following creds
 	///TODO: Validate pass & confirm match
 	///TODO: Validate username and email are unique
+	const csrfTkn = body['_csrf'] as string; 
+	if (csrfTkn != c.get('csrfTkn')) {
+		console.error('BAD CSRF TOKEN!');
+		///TODO: Log this!!! then clear everything and exit app with bad status
+	}
 	const username = body['username'] as string;
 	const email = body['email'] as string;
 	const plainPass = body['password'] as string;
-	await createUser(c, 'SESSION', username, email, plainPass);
+	await repoUserCreate(c, username, email, plainPass);
 	return c.text(`Signup success--Welcome '${username}'!`, 200);
 });
 
 app.get('/login', function (c) {
 	console.log('Inside GET/login route');
 	const tkn = crypto.randomUUID();
+	c.set('csrfTkn', tkn)
 	return c.render(<LoginPage csrfToken={tkn} />)
 });
 
 app.post('/login', async function (c) {
 	console.log('Inside POST/login/password route');
 	const body = await c.req.parseBody();
+	const csrfTkn = body['_csrf'] as string; 
+	if (csrfTkn != c.get('csrfTkn')) {
+		console.error('BAD CSRF TOKEN!');
+		///TODO: Log this!!! then clear everything and exit app with bad status
+	}
 	const username = body['username'] as string;
 	const plainPass = body['password'] as string;
-	const { user, error } = await verifyPasswordEnteredGetUser(c, 'SESSION', username, plainPass);
+	const { user, error } = await verifyPasswordReturnUser(c, username, plainPass);
 	if (error != null) {
 		// If user is null, then we got a bad username
 		if (user != null) {
@@ -51,7 +64,7 @@ app.post('/login', async function (c) {
 		}
 		return c.body(error, 401);
 	}
-	await createSession(c, 'SESSION', username, 3);
+	await createSession(c, username, 3);
 	return c.body(`Login success--Welcome '${username}'!`, 200);
 });
 
