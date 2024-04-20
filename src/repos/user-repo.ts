@@ -1,6 +1,6 @@
 import { Context } from 'hono';
 import { getHashedPasswordAndSalt } from '../lib/auth';
-import { User } from '../types';
+import { User, UserUpdate } from '../types';
 
 export async function repoUserCreate(
   c: Context,
@@ -25,6 +25,23 @@ export async function repoUserCreate(
   };
   console.log('repoUserCreate user: ', user);
   await c.env.SESSION.put(`USER:${username}`, JSON.stringify(user));
+}
+
+export async function repoUserUpdate(
+  c: Context,
+  username: string,
+  updateAttribs: UserUpdate
+): Promise<User | null> {
+  // Update new User to KV
+  const existingUser = await repoUserGetByUsername(c, username);
+  if (existingUser) {
+		updateAttribs.updated = new Date();
+    const updatedUser = { ...existingUser, ...updateAttribs };
+    console.log('repoUserUpdate updatedUser: ', updatedUser);
+    await c.env.SESSION.put(`USER:${username}`, JSON.stringify(updatedUser));
+    return updatedUser;
+  }
+  return null;
 }
 
 export async function repoUserGetByUsername(

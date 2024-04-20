@@ -6,6 +6,7 @@ import {
   repoUserGetBySessionId,
   repoUserGetByUsername,
 } from '../repos/user-repo';
+import { repoSessionCreate, repoSessionGetById } from '../repos/session-repo';
 
 export async function sessionAuth(c: Context, next: Next) {
   const sess = await getSessionFromCookie(c);
@@ -16,11 +17,10 @@ export async function sessionAuth(c: Context, next: Next) {
 
 export async function getSessionFromCookie(c: Context): Promise<Sess | null> {
   const sessId = getCookie(c, 'session');
-  console.log('auth.getSession sessId: ', sessId);
+  console.log('auth.getSessionFromCookie sessId: ', sessId);
   if (!sessId) return null;
-  const user = await repoUserGetBySessionId(c, sessId!);
-  if (!user) return null;
-  return { id: sessId, username: user.handle, email: user.email } as Sess;
+  const sess = await repoSessionGetById(c, sessId);
+  return sess;
 }
 
 export async function getHashedPasswordAndSalt(
@@ -45,17 +45,16 @@ export async function createSession(
   username: string,
   expireHrs: number
 ): Promise<string> {
-  const sessId = crypto.randomUUID();
   const d = new Date();
   const expMilliseconds = Math.round(d.getTime() + expireHrs * 60 * 60 * 1000);
   const expSeconds = expMilliseconds / 1000;
+  const sessId = await repoSessionCreate(c, username, expSeconds);
   setCookie(c, 'session', sessId, {
     path: '/',
     secure: true,
     httpOnly: true,
     expires: new Date(expMilliseconds),
   });
-  await c.env.SESSION.put(`SESS:${sessId}`, username, { expiration: expSeconds });
   return sessId;
 }
 
@@ -66,6 +65,9 @@ export async function verifyPasswordReturnUser(
 ): Promise<{ user: User | null; error: string | null }> {
   const user = await repoUserGetByUsername(c, username);
   if (!user) return { user: null, error: 'Invalid username' };
+  if (user.lockedReason != null && user.lockedReason.length > 0) {
+    return { user, error: user.lockedReason };
+  }
   const { pass } = await getHashedPasswordAndSalt(plainPass, user.salt);
   return user.pass == pass
     ? { user, error: null }

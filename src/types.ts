@@ -1,5 +1,5 @@
 export type User = {
-	handle:string;
+  handle: string;
   email: string;
   pass: string;
   salt: string;
@@ -12,6 +12,28 @@ export type User = {
   del: boolean | false;
 };
 
+export type UserUpdate = {
+  handle?: string;
+  email?: string;
+  pass?: string;
+  salt?: string;
+  lastLogin?: Date;
+  lastLoginIp?: string;
+  loginFails?: number;
+  lockedReason?: string;
+  created?: Date;
+  updated?: Date;
+  del?: boolean;
+};
+
+export type Log = {
+  type: string;
+  message: string;
+  requestIp: string | null;
+  created: Date;
+  del: boolean | false;
+};
+
 export type Sess = {
   id: string;
   username: string;
@@ -19,14 +41,13 @@ export type Sess = {
 };
 
 export type Env = {
-	ASSETS: Fetcher,
-	SESSION: KVNamespace,
-	SESS_SECRET: string,
-	SALT: string
-}
+  ASSETS: Fetcher;
+  SESSION: KVNamespace;
+  SESS_SECRET: string;
+  SALT: string;
+};
 
 export type Vars = {
-	sess: Sess,
-	csrfTkn: string
-}
-
+  sess: Sess;
+  csrfTkn: string;
+};
