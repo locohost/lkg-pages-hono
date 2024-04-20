@@ -19,8 +19,8 @@ export async function repoSessionCreate(
 export async function repoSessionGetById(
   c: Context,
   sessId: string
-): Promise<Sess | null> {
+): Promise<Sess | undefined> {
   const user = await repoUserGetBySessionId(c, sessId);
-  if (!user) return null;
+  if (!user) return undefined;
   return { id: sessId, username: user.handle, email: user.email } as Sess;
 }

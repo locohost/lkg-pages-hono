@@ -15,12 +15,11 @@ export async function sessionAuth(c: Context, next: Next) {
   return await next();
 }
 
-export async function getSessionFromCookie(c: Context): Promise<Sess | null> {
+export async function getSessionFromCookie(c: Context): Promise<Sess | undefined> {
   const sessId = getCookie(c, 'session');
   console.log('auth.getSessionFromCookie sessId: ', sessId);
-  if (!sessId) return null;
-  const sess = await repoSessionGetById(c, sessId);
-  return sess;
+  if (!sessId) return undefined;
+  return await repoSessionGetById(c, sessId);
 }
 
 export async function getHashedPasswordAndSalt(
