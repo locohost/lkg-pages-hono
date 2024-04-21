@@ -1,14 +1,12 @@
 import { Hono } from 'hono';
-import { renderer } from '../pages/renderer';
-import { LoginPage } from '../pages/login';
-import { SignupPage } from '../pages/signup';
-import type { Env, Vars } from "../types";
 import { repoUserCreate, repoUserUpdate } from '../repos/user-repo';
 import { repoLogCreateCrit, repoLogCreateError } from '../repos/log-repo';
 import { createSession, sendEmail, verifyPasswordReturnUser } from '../lib/auth';
+import { LoginPage } from '../pages/login';
+import { SignupPage } from '../pages/signup';
+import type { Env, Vars } from "../types";
 
 const app = new Hono<{ Bindings: Env, Variables: Vars }>();
-app.use(renderer);
 
 app.get('/signup', function (ctx) {
 	console.log('Inside GET/signup route');
@@ -38,7 +36,7 @@ app.post('/signup', async function (c) {
 	}
 	const href = `http://${c.env.SITE_URL_DEV}/auth/verify-email/${userResp.user!.verifyTkn}`;
 	const emailBody = `Please click this link to verify your email address and activate your Late Knight Games new user profile<br/><br/><a href="${href}">Verify this email</a>`;
-	const sent = await sendEmail(c.env.MG_CREDS, userResp.user!.email, 'Please verify your email', emailBody);
+	const sent = await sendEmail(c, userResp.user!.email, 'Please verify your email', emailBody);
 	///TODO: Check sent for error and handle
 	await c.env.SESSION.put(`USER:EVTKN:${userResp.user!.verifyTkn}`, userResp.user!.handle);
 	return c.body(`Signup success--Welcome '${username}'! You cannot login until you click the link in the verification email just sent. It may take a few minutes for that to appear in your inbox.`, 200);

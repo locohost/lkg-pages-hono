@@ -1,13 +1,8 @@
 import { Context, Next } from 'hono';
-//import FormData from 'form-data';
 import { getCookie, setCookie } from 'hono/cookie';
-import type { KVNamespace } from '@cloudflare/workers-types';
-import type { User, Sess, UserResp, SessResp } from '../types';
+import type { UserResp, SessResp } from '../types';
 import { Err } from '../constants';
-import {
-  repoUserGetBySessionId,
-  repoUserGetByUsername,
-} from '../repos/user-repo';
+import { repoUserGetByUsername } from '../repos/user-repo';
 import { repoSessionCreate, repoSessionGetById } from '../repos/session-repo';
 
 export async function sessionAuth(c: Context, next: Next) {
@@ -78,11 +73,12 @@ export async function verifyPasswordReturnUser(
 }
 
 export async function sendPostmark(
-  serverTkn: string,
+  c: Context,
   to: string,
   subject: string,
   body: string
 ) {
+  const serverTkn = c.env.PM_TKN;
   const mssgs = [
     {
       From: 'admin@lateknight.games',
@@ -110,12 +106,13 @@ export async function sendPostmark(
 }
 
 export async function sendEmail(
-  mgCreds: string,
+  c: Context,
   to: string,
   subject: string,
   body: string
 ) {
   //console.log('mgCreds: ', mgCreds);
+  const mgCreds = c.env.MG_CREDS;
   const form = new FormData();
   form.append('from', 'mark@mg.lateknight.games');
   form.append('to', to);
