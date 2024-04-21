@@ -1,20 +1,20 @@
 import { Hono } from 'hono';
-import { createSession, sendEmail, verifyPasswordReturnUser } from '../lib/auth';
 import { renderer } from '../pages/renderer';
 import { LoginPage } from '../pages/login';
 import { SignupPage } from '../pages/signup';
 import type { Env, Vars } from "../types";
 import { repoUserCreate, repoUserUpdate } from '../repos/user-repo';
 import { repoLogCreateCrit, repoLogCreateError } from '../repos/log-repo';
+import { createSession, sendEmail, verifyPasswordReturnUser } from '../lib/auth';
 
 const app = new Hono<{ Bindings: Env, Variables: Vars }>();
 app.use(renderer);
 
-app.get('/signup', function (c) {
+app.get('/signup', function (ctx) {
 	console.log('Inside GET/signup route');
 	const tkn = crypto.randomUUID();
-	c.set('csrfTkn', tkn)
-	return c.render(<SignupPage csrfToken={tkn} />);
+	ctx.set('csrfTkn', tkn)
+	return ctx.html(<SignupPage ctx={ctx} csrfToken={tkn} />);
 });
 
 app.post('/signup', async function (c) {
@@ -57,11 +57,11 @@ app.get('/verify-email/:tkn', async function (c) {
 	return c.body('Your email is verified. You can login with the credentials you  entered!');
 });
 
-app.get('/login', function (c) {
+app.get('/login', function (ctx) {
 	console.log('Inside GET/login route');
 	const tkn = crypto.randomUUID();
-	c.set('csrfTkn', tkn)
-	return c.render(<LoginPage csrfToken={tkn} />)
+	//ctx.set('csrfTkn', tkn)
+	return ctx.html(<LoginPage ctx={ctx} csrfToken={tkn} />)
 });
 
 app.post('/login', async function (c) {

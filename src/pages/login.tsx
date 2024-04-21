@@ -1,7 +1,9 @@
+import { Context } from 'hono';
+import { Layout } from './layout';
 
-export function LoginPage({ csrfToken }: { csrfToken: string }) {
+export function LoginPage({ ctx, csrfToken }: { ctx: Context, csrfToken: string }) {
 	return (
-		<>
+		<Layout title='Login' ctx={ctx}>
 			<div class="text-2xl mb-4">Login</div>
 			<form action="/auth/login" method="post">
 				<label class="input input-bordered flex items-center gap-2 mb-2">
@@ -15,7 +17,7 @@ export function LoginPage({ csrfToken }: { csrfToken: string }) {
 				<input type="hidden" name="_csrf" value={csrfToken} />
 				<button class="btn" type="submit">Login</button>
 			</form>
-		</>
+		</Layout>
 	);
 };
 

@@ -1,4 +1,5 @@
 import { jsxRenderer } from 'hono/jsx-renderer'
+//import Navbar from '../components/Navbar';
 
 export const renderer = jsxRenderer(({ children, title }) => {
 	return (

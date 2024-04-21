@@ -1,10 +1,13 @@
 {
   "type": "module",
   "scripts": {
-    "dev": "tailwindcss -i ./src/input.css -o ./public/static/css/styles.css && vite",
-    "build": "tailwindcss -i ./src/input.css -o ./public/static/css/styles.css && vite build",
-    "deploy:prev": "tailwindcss -i ./src/input.css -o ./public/static/css/styles.css && vite build && wrangler pages deploy --branch preview",
-    "deploy:prod": "tailwindcss -i ./src/input.css -o ./public/static/css/styles.css && vite build && wrangler pages deploy --branch production"
+    "dev": "npm run tw:b && vite",
+    "build": "npm run pre",
+    "deploy:prev": "npm run pre && wrangler pages deploy --branch preview",
+    "deploy:prod": "npm run pre && wrangler pages deploy --branch production",
+		"pre": "npm run tw:b && npm run v:b",
+		"tw:b": "tailwindcss -i ./src/input.css -o ./public/static/css/styles.css",
+		"v:b": "vite build"
   },
   "dependencies": {
     "form-data": "^4.0.0",
