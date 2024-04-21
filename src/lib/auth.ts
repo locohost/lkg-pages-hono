@@ -1,4 +1,5 @@
 import { Context, Next } from 'hono';
+//import FormData from 'form-data';
 import { getCookie, setCookie } from 'hono/cookie';
 import type { KVNamespace } from '@cloudflare/workers-types';
 import type { User, Sess } from '../types';
@@ -10,12 +11,14 @@ import { repoSessionCreate, repoSessionGetById } from '../repos/session-repo';
 
 export async function sessionAuth(c: Context, next: Next) {
   const sess = await getSessionFromCookie(c);
-  if (!sess) return c.redirect('/login', 302);
+  if (!sess) return c.redirect('/auth/login', 302);
   c.set('sess', sess);
   return await next();
 }
 
-export async function getSessionFromCookie(c: Context): Promise<Sess | undefined> {
+export async function getSessionFromCookie(
+  c: Context
+): Promise<Sess | undefined> {
   const sessId = getCookie(c, 'session');
   console.log('auth.getSessionFromCookie sessId: ', sessId);
   if (!sessId) return undefined;
@@ -71,6 +74,71 @@ export async function verifyPasswordReturnUser(
   return user.pass == pass
     ? { user, error: null }
     : { user, error: 'Invalid password' };
+}
+
+export async function sendPostmark(
+  serverTkn: string,
+  to: string,
+  subject: string,
+  body: string
+) {
+  const mssgs = [
+    {
+      From: 'admin@lateknight.games',
+      To: to,
+      Subject: subject,
+      Tag: 'my-tag',
+      HtmlBody: body,
+      TextBody: body,
+      MessageStream: 'broadcasts',
+    },
+  ];
+  const resp = await fetch(`https://api.postmarkapp.com/email/batch`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'X-Postmark-Server-Token': serverTkn,
+    },
+    // @ts-ignore
+    body: JSON.stringify(mssgs),
+  });
+
+  const data = await resp.text();
+  console.log('sendEmail resp: ', data);
+}
+
+export async function sendEmail(
+  mgCreds: string,
+  to: string,
+  subject: string,
+  body: string
+) {
+  //console.log('mgCreds: ', mgCreds);
+  const form = new FormData();
+  form.append('from', 'mark@mg.lateknight.games');
+  form.append('to', to);
+  form.append('subject', subject);
+  form.append('html', body);
+  // https://api.mailgun.net/v3/{domain_name}/messages
+  const domainName = 'mg.lateknight.games';
+  //const auth = Buffer.from(mgCreds).toString('base64');
+  console.log('sendEmail creds: ', mgCreds);
+  console.log('sendEmail form: ', form);
+  const resp = await fetch(
+    `https://api.mailgun.net/v3/${domainName}/messages`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: 'Basic ' + mgCreds,
+      },
+      // @ts-ignore
+      body: form,
+    }
+  );
+
+  const data = await resp.text();
+  console.log('sendEmail resp: ', data);
 }
 
 function hexStrFromArrBuff(myBuffer: ArrayBuffer): string {

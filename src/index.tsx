@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { renderer } from './pages/renderer';
-import { sessionAuth } from './lib/auth';
-import type { Env,Vars } from "./types";
+import { sendEmail, sendPostmark, sessionAuth } from './lib/auth';
+import type { Env, Vars } from "./types";
 import authRoutes from './routes/auth-routes';
 
 const app = new Hono<{ Bindings: Env, Variables: Vars }>();
@@ -10,12 +10,14 @@ app.use(renderer);
 app.get('/', function (c) {
 	return c.render(<h1>Hello!</h1>);
 });
-app.get('/protected', sessionAuth, function (c) {
+app.get('/protected', sessionAuth, async function (c) {
 	const sess = c.get('sess');
 	console.log('sess: ', sess);
-	return c.render(<h1>Protected, but you have a login session!</h1>)
+	await sendPostmark(c.env.PM_TKN, 'locohost@gmail.com', 'Hello test', 'Hello test body');
+	return c.render(<h1>Protected, but you have permission. Just sent test email!</h1>)
 });
 
 app.route('/auth', authRoutes);
 
 export default app
+

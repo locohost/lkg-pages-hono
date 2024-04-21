@@ -41,6 +41,8 @@ export type Sess = {
 };
 
 export type Env = {
+	MG_CREDS: string;
+	PM_TKN: string;
   ASSETS: Fetcher;
   SESSION: KVNamespace;
   SESS_SECRET: string;

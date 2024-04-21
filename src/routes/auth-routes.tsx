@@ -45,11 +45,11 @@ app.get('/login', function (c) {
 app.post('/login', async function (c) {
 	console.log('Inside POST/login/password route');
 	const body = await c.req.parseBody();
-	const csrfTkn = body['_csrf'] as string;
-	if (csrfTkn != c.get('csrfTkn')) {
-		console.error('BAD CSRF TOKEN!');
-		///TODO: Log this!!! then clear everything and exit app with bad status
-	}
+	// const csrfTkn = body['_csrf'] as string;
+	// if (csrfTkn != c.get('csrfTkn')) {
+	// 	console.error('BAD CSRF TOKEN!');
+	// 	///TODO: Log this!!! then clear everything and exit app with bad status
+	// }
 	const username = body['username'] as string;
 	const plainPass = body['password'] as string;
 	const { user, error } = await verifyPasswordReturnUser(c, username, plainPass);

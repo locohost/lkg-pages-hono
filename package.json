@@ -7,6 +7,7 @@
     "deploy:prod": "tailwindcss -i ./src/input.css -o ./public/static/css/styles.css && vite build && wrangler pages deploy --branch production"
   },
   "dependencies": {
+    "form-data": "^4.0.0",
     "hono": "^4.2.4"
   },
   "devDependencies": {
