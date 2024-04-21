@@ -2,7 +2,8 @@ import { Context, Next } from 'hono';
 //import FormData from 'form-data';
 import { getCookie, setCookie } from 'hono/cookie';
 import type { KVNamespace } from '@cloudflare/workers-types';
-import type { User, Sess } from '../types';
+import type { User, Sess, UserResp, SessResp } from '../types';
+import { Err } from '../constants';
 import {
   repoUserGetBySessionId,
   repoUserGetByUsername,
@@ -16,12 +17,10 @@ export async function sessionAuth(c: Context, next: Next) {
   return await next();
 }
 
-export async function getSessionFromCookie(
-  c: Context
-): Promise<Sess | undefined> {
+export async function getSessionFromCookie(c: Context): Promise<SessResp> {
   const sessId = getCookie(c, 'session');
   console.log('auth.getSessionFromCookie sessId: ', sessId);
-  if (!sessId) return undefined;
+  if (!sessId) return { error: 'Invalid session cookie' };
   return await repoSessionGetById(c, sessId);
 }
 
@@ -46,34 +45,36 @@ export async function createSession(
   c: Context,
   username: string,
   expireHrs: number
-): Promise<string> {
+): Promise<SessResp> {
   const d = new Date();
   const expMilliseconds = Math.round(d.getTime() + expireHrs * 60 * 60 * 1000);
   const expSeconds = expMilliseconds / 1000;
-  const sessId = await repoSessionCreate(c, username, expSeconds);
-  setCookie(c, 'session', sessId, {
-    path: '/',
-    secure: true,
-    httpOnly: true,
-    expires: new Date(expMilliseconds),
-  });
-  return sessId;
+  const sessResp = await repoSessionCreate(c, username, expSeconds);
+  if (!sessResp.error) {
+    setCookie(c, 'session', sessResp.sess!.id, {
+      path: '/',
+      secure: true,
+      httpOnly: true,
+      expires: new Date(expMilliseconds),
+    });
+  }
+  return sessResp;
 }
 
 export async function verifyPasswordReturnUser(
   c: Context,
   username: string,
   plainPass: string
-): Promise<{ user: User | null; error: string | null }> {
-  const user = await repoUserGetByUsername(c, username);
-  if (!user) return { user: null, error: 'Invalid username' };
-  if (user.lockedReason != null && user.lockedReason.length > 0) {
-    return { user, error: user.lockedReason };
-  }
-  const { pass } = await getHashedPasswordAndSalt(plainPass, user.salt);
-  return user.pass == pass
-    ? { user, error: null }
-    : { user, error: 'Invalid password' };
+): Promise<UserResp> {
+  const userResp = await repoUserGetByUsername(c, username);
+  if (userResp.error) return userResp;
+  const { pass } = await getHashedPasswordAndSalt(
+    plainPass,
+    userResp.user!.salt
+  );
+  return userResp.user!.pass == pass
+    ? { user: userResp.user }
+    : { error: Err.BadPass };
 }
 
 export async function sendPostmark(

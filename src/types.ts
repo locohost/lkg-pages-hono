@@ -1,6 +1,8 @@
 export type User = {
   handle: string;
   email: string;
+	emailVerified: boolean;
+	verifyTkn: string;
   pass: string;
   salt: string;
   lastLogin: Date | null;
@@ -12,9 +14,16 @@ export type User = {
   del: boolean | false;
 };
 
+export type UserResp = {
+	user?: User;
+	error?: string;
+};
+
 export type UserUpdate = {
   handle?: string;
   email?: string;
+	emailVerified?: boolean;
+	verifyTkn?: string;
   pass?: string;
   salt?: string;
   lastLogin?: Date;
@@ -40,7 +49,14 @@ export type Sess = {
   email: string;
 };
 
+export type SessResp = {
+	sess?: Sess;
+	error?: string;
+}
+
 export type Env = {
+	SITE_URL_DEV: string;
+	SITE_URL_PROD: string;
 	MG_CREDS: string;
 	PM_TKN: string;
   ASSETS: Fetcher;

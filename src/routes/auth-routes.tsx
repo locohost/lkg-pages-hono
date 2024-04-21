@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { createSession, verifyPasswordReturnUser } from '../lib/auth';
+import { createSession, sendEmail, verifyPasswordReturnUser } from '../lib/auth';
 import { renderer } from '../pages/renderer';
 import { LoginPage } from '../pages/login';
 import { SignupPage } from '../pages/signup';
@@ -20,19 +20,41 @@ app.get('/signup', function (c) {
 app.post('/signup', async function (c) {
 	console.log('Inside POST/signup route');
 	const body = await c.req.parseBody();
-	///TODO: Validate chars in following creds
-	///TODO: Validate pass & confirm match
-	///TODO: Validate username and email are unique
-	const csrfTkn = body['_csrf'] as string;
-	if (csrfTkn != c.get('csrfTkn')) {
-		console.error('BAD CSRF TOKEN!');
-		///TODO: Log this!!! then clear everything and exit app with bad status
-	}
 	const username = body['username'] as string;
 	const email = body['email'] as string;
 	const plainPass = body['password'] as string;
-	await repoUserCreate(c, username, email, plainPass);
-	return c.text(`Signup success--Welcome '${username}'!`, 200);
+	const confirm = body['confirm'] as string;
+	const csrfTkn = body['_csrf'] as string;
+	///TODO: Validate chars in following creds
+	///TODO: Validate pass & confirm match
+	///TODO: Validate username and email are unique
+	// if (csrfTkn != c.get('csrfTkn')) {
+	// 	console.error('BAD CSRF TOKEN!');
+	// 	///TODO: Log this!!! then clear everything and exit app with bad status
+	// }
+	const userResp = await repoUserCreate(c, username, email, plainPass);
+	if (userResp.error) {
+		return c.body(`Oh no! '${userResp.error}'`, 400);
+	}
+	const href = `http://${c.env.SITE_URL_DEV}/auth/verify-email/${userResp.user!.verifyTkn}`;
+	const emailBody = `Please click this link to verify your email address and activate your Late Knight Games new user profile<br/><br/><a href="${href}">Verify this email</a>`;
+	const sent = await sendEmail(c.env.MG_CREDS, userResp.user!.email, 'Please verify your email', emailBody);
+	///TODO: Check sent for error and handle
+	await c.env.SESSION.put(`USER:EVTKN:${userResp.user!.verifyTkn}`, userResp.user!.handle);
+	return c.body(`Signup success--Welcome '${username}'! You cannot login until you click the link in the verification email just sent. It may take a few minutes for that to appear in your inbox.`, 200);
+});
+
+app.get('/verify-email/:tkn', async function (c) {
+	const tkn = c.req.param('tkn') as string;
+	const verifyTkn = `USER:EVTKN:${tkn}`;
+	const username = await c.env.SESSION.get(verifyTkn);
+	if (!username) {
+		await repoLogCreateCrit(c, `Bad email verification token: '${tkn}'`);
+		return c.body('Invalid email verification token');
+	}
+	await repoUserUpdate(c, username!, { emailVerified: true, verifyTkn: '' });
+	await c.env.SESSION.delete(verifyTkn);
+	return c.body('Your email is verified. You can login with the credentials you  entered!');
 });
 
 app.get('/login', function (c) {
