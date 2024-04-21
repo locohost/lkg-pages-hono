@@ -23,7 +23,7 @@ export function SignupPage({ ctx, csrfToken }: { ctx: Context, csrfToken: string
 					<input type="password" name="confirm" class="grow bg-transparent w-full max-w-xs" placeholder="Confirm" />
 				</label>
 				<input type="hidden" name="_csrf" value={csrfToken} />
-				<button class="btn" type="submit">Sign up</button>
+				<button className="btn btn-primary" type="submit">Sign up</button>
 			</form>
 		</Layout>
 	);

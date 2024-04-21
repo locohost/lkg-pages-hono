@@ -17,7 +17,8 @@ export default function Navbar({ ctx }: { ctx: Context }) {
 								<li><a>Submenu 2</a></li>
 							</ul>
 						</li>
-						<li><a>Item 3</a></li>
+						<li><a href="/auth/signup">Signup</a></li>
+						<li><a href="/auth/login">Login</a></li>
 					</ul>
 				</div>
 				<a className="btn btn-ghost text-xl" href="/">LKG</a>

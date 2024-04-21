@@ -16,11 +16,14 @@ export const Layout: FC<Props> = (props) => {
 				<title>{props.title}</title>
 				<link rel="icon" type="image/x-icon" href="/static/favicon.ico"></link>
 				<link href="/static/css/styles.css" rel="stylesheet" type="text/css" />
+				<script src="/static/js/htmx.min.js"></script>
 			</head>
 			<body class="m-2">
 				<Navbar ctx={props.ctx}></Navbar>
-				<div class="px-7">{props.children}</div>
-				<Footer></Footer>
+				<div class="px-7">
+					{props.children}
+					<Footer></Footer>
+				</div>
 			</body>
 		</html>
 	)

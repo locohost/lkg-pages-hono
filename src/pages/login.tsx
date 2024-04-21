@@ -15,7 +15,7 @@ export function LoginPage({ ctx, csrfToken }: { ctx: Context, csrfToken: string 
 					<input type="password" name="password" class="grow bg-transparent w-full max-w-xs" placeholder="Password" />
 				</label>
 				<input type="hidden" name="_csrf" value={csrfToken} />
-				<button class="btn" type="submit">Login</button>
+				<button className="btn btn-primary" type="submit">Login</button>
 			</form>
 		</Layout>
 	);
