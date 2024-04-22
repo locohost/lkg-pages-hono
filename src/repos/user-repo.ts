@@ -37,10 +37,10 @@ export async function repoUserUpdate(
   updateAttribs: UserUpdate
 ): Promise<UserResp> {
   // Update new User to KV
-  const existingUser = await repoUserGetByUsername(c, username);
-  if (!existingUser) return { error: Err.BadHandle };
+  const existingResp = await repoUserGetByUsername(c, username);
+  if (!existingResp) return { error: Err.BadHandle };
   updateAttribs.updated = new Date();
-  const userUpdated = { ...existingUser, ...updateAttribs } as User;
+  const userUpdated = { ...existingResp.user, ...updateAttribs } as User;
   console.log('repoUserUpdate updatedUser: ', userUpdated);
   await c.env.SESSION.put(`USER:${username}`, JSON.stringify(userUpdated));
   return { user: userUpdated };
