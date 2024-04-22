@@ -5,6 +5,16 @@ import { Err } from '../constants';
 import { repoUserGetByUsername } from '../repos/user-repo';
 import { repoSessionCreate, repoSessionGetById } from '../repos/session-repo';
 
+export function getExpiration(hrs: number): {
+  seconds: number;
+  milliseconds: number;
+} {
+  const d = new Date();
+  const expMilliseconds = Math.round(d.getTime() + hrs * 60 * 60 * 1000);
+  const expSeconds = expMilliseconds / 1000;
+  return { seconds: expSeconds, milliseconds: expMilliseconds };
+}
+
 export async function sessionAuth(c: Context, next: Next) {
   const sess = await getSessionFromCookie(c);
   if (!sess) return c.redirect('/auth/login', 302);
@@ -41,16 +51,14 @@ export async function createSession(
   username: string,
   expireHrs: number
 ): Promise<SessResp> {
-  const d = new Date();
-  const expMilliseconds = Math.round(d.getTime() + expireHrs * 60 * 60 * 1000);
-  const expSeconds = expMilliseconds / 1000;
-  const sessResp = await repoSessionCreate(c, username, expSeconds);
+  const exp = getExpiration(expireHrs);
+  const sessResp = await repoSessionCreate(c, username, exp.seconds);
   if (!sessResp.error) {
     setCookie(c, 'session', sessResp.sess!.id, {
       path: '/',
       secure: true,
       httpOnly: true,
-      expires: new Date(expMilliseconds),
+      expires: new Date(exp.milliseconds),
     });
   }
   return sessResp;
