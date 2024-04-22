@@ -23,10 +23,13 @@ app.post('/subscribe', async function (ctx) {
 app.get('/confirm-sub/:tkn', async function (ctx) {
 	const tkn = ctx.req.param('tkn') as string;
 	const email = await ctx.env.SESSION.get(`EMLSUB:${tkn}`) as string;
+	let mssg = 'Invalid email verification token!';
 	if (email) {
 		ctx.env.SESSION.put(`EMLSUB:${email}`, '1');
 		ctx.env.SESSION.delete(`EMLSUB:${tkn}`);
+		mssg = "Your email subscription is confirmed! We'll send only occassional email updates on web site and game news.";
 	}
+	return ctx.html(<MessagePage ctx={ctx} message={mssg} />);
 });
 
 export default app

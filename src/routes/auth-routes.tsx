@@ -6,6 +6,7 @@ import { LoginPage } from '../pages/login';
 import { SignupPage } from '../pages/signup';
 import type { Env, Vars } from "../types";
 import { getSiteUrl } from '../lib/util';
+import { MessagePage } from '../pages/message';
 
 const app = new Hono<{ Bindings: Env, Variables: Vars }>();
 
@@ -41,7 +42,8 @@ app.post('/signup', async function (ctx) {
 	const sent = await sendEmail(ctx, userResp.user!.email, 'Please verify your email', emailBody);
 	///TODO: Check sent for error and handle
 	await ctx.env.SESSION.put(`USER:EVTKN:${userResp.user!.verifyTkn}`, userResp.user!.handle);
-	return ctx.body(`Signup success--Welcome '${username}'! You cannot login until you click the link in the verification email just sent. It may take a few minutes for that to appear in your inbox.`, 200);
+	const mssg = `Signup success--Welcome '${username}'! You cannot login until you click the link in the verification email just sent. It may take a few minutes for that to appear in your inbox.`;
+	return ctx.html(<MessagePage ctx={ctx} message={mssg} />);
 });
 
 app.get('/verify-email/:tkn', async function (c) {
@@ -50,11 +52,11 @@ app.get('/verify-email/:tkn', async function (c) {
 	const username = await c.env.SESSION.get(verifyTkn);
 	if (!username) {
 		await repoLogCreateCrit(c, `Bad email verification token: '${tkn}'`);
-		return c.body('Invalid email verification token');
+		return c.html(<MessagePage ctx={c} message='Invalid email verification token!' />);
 	}
 	await repoUserUpdate(c, username!, { emailVerified: true, verifyTkn: '' });
 	await c.env.SESSION.delete(verifyTkn);
-	return c.body('Your email is verified. You can login with the credentials you  entered!');
+	return c.html(<MessagePage ctx={c} message='Your email is verified. You can login with the credentials you entered!' />);
 });
 
 app.get('/login', function (ctx) {
