@@ -5,6 +5,7 @@ import { createSession, sendEmail, verifyPasswordReturnUser } from '../lib/auth'
 import { LoginPage } from '../pages/login';
 import { SignupPage } from '../pages/signup';
 import type { Env, Vars } from "../types";
+import { getSiteUrl } from '../lib/util';
 
 const app = new Hono<{ Bindings: Env, Variables: Vars }>();
 
@@ -15,9 +16,9 @@ app.get('/signup', function (ctx) {
 	return ctx.html(<SignupPage ctx={ctx} csrfToken={tkn} />);
 });
 
-app.post('/signup', async function (c) {
+app.post('/signup', async function (ctx) {
 	console.log('Inside POST/signup route');
-	const body = await c.req.parseBody();
+	const body = await ctx.req.parseBody();
 	const username = body['username'] as string;
 	const email = body['email'] as string;
 	const plainPass = body['password'] as string;
@@ -30,16 +31,17 @@ app.post('/signup', async function (c) {
 	// 	console.error('BAD CSRF TOKEN!');
 	// 	///TODO: Log this!!! then clear everything and exit app with bad status
 	// }
-	const userResp = await repoUserCreate(c, username, email, plainPass);
+	const userResp = await repoUserCreate(ctx, username, email, plainPass);
 	if (userResp.error) {
-		return c.body(`Oh no! '${userResp.error}'`, 400);
+		return ctx.body(`Oh no! '${userResp.error}'`, 400);
 	}
-	const href = `http://${c.env.SITE_URL_DEV}/auth/verify-email/${userResp.user!.verifyTkn}`;
+	const url = getSiteUrl(ctx);
+	const href = `${url}/auth/verify-email/${userResp.user!.verifyTkn}`;
 	const emailBody = `Please click this link to verify your email address and activate your Late Knight Games new user profile<br/><br/><a href="${href}">Verify this email</a>`;
-	const sent = await sendEmail(c, userResp.user!.email, 'Please verify your email', emailBody);
+	const sent = await sendEmail(ctx, userResp.user!.email, 'Please verify your email', emailBody);
 	///TODO: Check sent for error and handle
-	await c.env.SESSION.put(`USER:EVTKN:${userResp.user!.verifyTkn}`, userResp.user!.handle);
-	return c.body(`Signup success--Welcome '${username}'! You cannot login until you click the link in the verification email just sent. It may take a few minutes for that to appear in your inbox.`, 200);
+	await ctx.env.SESSION.put(`USER:EVTKN:${userResp.user!.verifyTkn}`, userResp.user!.handle);
+	return ctx.body(`Signup success--Welcome '${username}'! You cannot login until you click the link in the verification email just sent. It may take a few minutes for that to appear in your inbox.`, 200);
 });
 
 app.get('/verify-email/:tkn', async function (c) {
