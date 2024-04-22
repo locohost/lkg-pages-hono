@@ -88,12 +88,13 @@ app.post('/login', async function (c) {
 				await repoUserUpdate(c, username, { lockedReason: 'Too many failed login attempts' });
 				await repoLogCreateCrit(c, 'User locked: Too many failed login attempts', username);
 			}
+			return c.html(<MessagePage ctx={c} message={error} />);
 		}
-		return c.body(error, 401);
 	}
 	await repoUserUpdate(c, username, { lastLogin: new Date() });
 	await createSession(c, username, 3);
-	return c.body(`Login success--Welcome '${username}'!`, 200);
+	const mssg = `Login success--Welcome '${username}'!`;
+	return c.html(<MessagePage ctx={c} message={mssg} />);
 });
 
 export default app
