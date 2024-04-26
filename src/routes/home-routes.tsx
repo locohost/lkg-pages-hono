@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { sessionAuth } from '../lib/auth';
 import type { Env, Vars } from "../types";
-import { HomePage } from '../pages/home';
+import { HomePage } from '../pages/home-page';
 
 const app = new Hono<{ Bindings: Env, Variables: Vars }>();
 

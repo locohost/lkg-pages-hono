@@ -16,6 +16,7 @@ export const Layout: FC<Props> = (props) => {
 				<title>{props.title}</title>
 				<link rel="icon" type="image/x-icon" href="/static/favicon.ico"></link>
 				<link href="/static/css/styles.css" rel="stylesheet" type="text/css" />
+				{/* <link href="/static/css/my-styles.css" rel="stylesheet" type="text/css" /> */}
 				<script src="/static/js/htmx.min.js"></script>
 			</head>
 			<body class="m-2">

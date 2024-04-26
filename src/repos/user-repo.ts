@@ -31,19 +31,28 @@ export async function repoUserCreate(
   return { user };
 }
 
+export async function repoUserCreateEmailVerify(
+  ctx: Context,
+  handle: string,
+  tkn: string
+) {
+  console.log('repoUserCreateEmailVerify tkn: ', tkn);
+  await ctx.env.SESSION.put(`USER:EVTKN:${tkn}`, handle);
+}
+
 export async function repoUserUpdate(
   c: Context,
   username: string,
-  updateAttribs: UserUpdate
+  changedAttribs: UserUpdate
 ): Promise<UserResp> {
   // Update new User to KV
-  const existingResp = await repoUserGetByUsername(c, username);
-  if (!existingResp) return { error: Err.BadHandle };
-  updateAttribs.updated = new Date();
-  const userUpdated = { ...existingResp.user, ...updateAttribs } as User;
-  console.log('repoUserUpdate updatedUser: ', userUpdated);
-  await c.env.SESSION.put(`USER:${username}`, JSON.stringify(userUpdated));
-  return { user: userUpdated };
+  const existing = await repoUserGetByUsername(c, username);
+  if (!existing) return { error: Err.BadHandle };
+  changedAttribs.updated = new Date();
+  const updated = { ...existing, ...changedAttribs } as User;
+  console.log('repoUserUpdate updatedUser: ', updated);
+  await c.env.SESSION.put(`USER:${username}`, JSON.stringify(updated));
+  return { user: updated };
 }
 
 export async function repoUserGetByUsername(
@@ -51,9 +60,10 @@ export async function repoUserGetByUsername(
   username: string
 ): Promise<UserResp> {
   const userStr = await c.env.SESSION.get(`USER:${username}`);
+  console.log('repoUserGetByUsername userStr: ', userStr);
   if (!userStr) return { error: Err.BadHandle };
   const user = JSON.parse(userStr) as User;
-  return user.del == false ? { user } : {};
+  return user.del == false ? { user } : { error: Err.BadHandle };
 }
 
 export async function repoUserGetBySessionId(
@@ -61,6 +71,6 @@ export async function repoUserGetBySessionId(
   sessId: string
 ): Promise<UserResp> {
   const username = await c.env.SESSION.get(`SESS:${sessId}`);
-  if (!username) return { error: Err.BadHandle } as UserResp;
+  if (!username) return { error: 'Invalid session id' };
   return await repoUserGetByUsername(c, username);
 }

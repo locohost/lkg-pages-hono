@@ -70,81 +70,15 @@ export async function verifyPasswordReturnUser(
   plainPass: string
 ): Promise<UserResp> {
   const userResp = await repoUserGetByUsername(c, username);
-  if (userResp.error) return userResp;
-  const { pass } = await getHashedPasswordAndSalt(
-    plainPass,
-    userResp.user!.salt
-  );
-  return userResp.user!.pass == pass
-    ? { user: userResp.user }
-    : { error: Err.BadPass };
-}
-
-export async function sendPostmark(
-  c: Context,
-  to: string,
-  subject: string,
-  body: string
-) {
-  const serverTkn = c.env.PM_TKN;
-  const mssgs = [
-    {
-      From: 'admin@lateknight.games',
-      To: to,
-      Subject: subject,
-      Tag: 'my-tag',
-      HtmlBody: body,
-      TextBody: body,
-      MessageStream: 'broadcasts',
-    },
-  ];
-  const resp = await fetch(`https://api.postmarkapp.com/email/batch`, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      'X-Postmark-Server-Token': serverTkn,
-    },
-    // @ts-ignore
-    body: JSON.stringify(mssgs),
-  });
-
-  const data = await resp.text();
-  console.log('sendEmail resp: ', data);
-}
-
-export async function sendEmail(
-  c: Context,
-  to: string,
-  subject: string,
-  body: string
-) {
-  //console.log('mgCreds: ', mgCreds);
-  const mgCreds = c.env.MG_CREDS;
-  const form = new FormData();
-  form.append('from', 'mark@mg.lateknight.games');
-  form.append('to', to);
-  form.append('subject', subject);
-  form.append('html', body);
-  // https://api.mailgun.net/v3/{domain_name}/messages
-  const domainName = 'mg.lateknight.games';
-  //const auth = Buffer.from(mgCreds).toString('base64');
-  console.log('sendEmail creds: ', mgCreds);
-  console.log('sendEmail form: ', form);
-  const resp = await fetch(
-    `https://api.mailgun.net/v3/${domainName}/messages`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: 'Basic ' + mgCreds,
-      },
-      // @ts-ignore
-      body: form,
-    }
-  );
-
-  const data = await resp.text();
-  console.log('sendEmail resp: ', data);
+  console.log('verifyPasswordReturnUser user: ', userResp.user);
+  if (userResp.user) {
+    const { pass } = await getHashedPasswordAndSalt(
+      plainPass,
+      userResp.user.salt
+    );
+    if (userResp.user.pass == pass) return { user: userResp.user };
+  }
+  return userResp;
 }
 
 function hexStrFromArrBuff(myBuffer: ArrayBuffer): string {

@@ -1,12 +1,13 @@
 import { Hono } from 'hono';
-import { repoUserCreate, repoUserUpdate } from '../repos/user-repo';
+import type { Env, PostmarkResp, Vars } from "../types";
+import { createSession, verifyPasswordReturnUser } from '../lib/auth';
+import { sendPostmark } from '../lib/email';
+import { getSiteUrl, showMessagePageResponse } from '../lib/util';
+import { LoginPage } from '../pages/login-page';
+import { SignupPage } from '../pages/signup-page';
+import { MessagePage } from '../pages/message-page';
+import { repoUserCreate, repoUserCreateEmailVerify, repoUserGetByUsername, repoUserUpdate } from '../repos/user-repo';
 import { repoLogCreateCrit, repoLogCreateError } from '../repos/log-repo';
-import { createSession, sendEmail, verifyPasswordReturnUser } from '../lib/auth';
-import { LoginPage } from '../pages/login';
-import { SignupPage } from '../pages/signup';
-import type { Env, Vars } from "../types";
-import { getSiteUrl } from '../lib/util';
-import { MessagePage } from '../pages/message';
 
 const app = new Hono<{ Bindings: Env, Variables: Vars }>();
 
@@ -32,18 +33,26 @@ app.post('/signup', async function (ctx) {
 	// 	console.error('BAD CSRF TOKEN!');
 	// 	///TODO: Log this!!! then clear everything and exit app with bad status
 	// }
+	if (username != confirm) {
+		return showMessagePageResponse(ctx, `Oh no! Username and Confirm do not match`, 400);
+	}
+	const checkResp = await repoUserGetByUsername(ctx, username);
+	if (checkResp.user) {
+		return showMessagePageResponse(ctx, `Oh no! Username'${checkResp.user}' already exists. Did you mean to login? If not, please try a different username`, 400);
+	}
 	const userResp = await repoUserCreate(ctx, username, email, plainPass);
 	if (userResp.error) {
-		return ctx.body(`Oh no! '${userResp.error}'`, 400);
+		return showMessagePageResponse(ctx, `Oh no! '${userResp.error}'`, 400);
 	}
 	const url = getSiteUrl(ctx);
 	const href = `${url}/auth/verify-email/${userResp.user!.verifyTkn}`;
 	const emailBody = `Please click this link to verify your email address and activate your Late Knight Games new user profile<br/><br/><a href="${href}">Verify this email</a>`;
-	const sent = await sendEmail(ctx, userResp.user!.email, 'Please verify your email', emailBody);
-	///TODO: Check sent for error and handle
-	await ctx.env.SESSION.put(`USER:EVTKN:${userResp.user!.verifyTkn}`, userResp.user!.handle);
-	const mssg = `Signup success--Welcome '${username}'! You cannot login until you click the link in the verification email just sent. It may take a few minutes for that to appear in your inbox.`;
-	return ctx.html(<MessagePage ctx={ctx} message={mssg} />);
+	const sendResp = await sendPostmark(ctx, userResp.user!.email, 'Please verify your email', emailBody);
+	if (sendResp.ErrorCode > 0) {
+		return showMessagePageResponse(ctx, `Oh no! '${sendResp.Message}'`, 400);
+	}
+	await repoUserCreateEmailVerify(ctx, userResp.user!.handle, userResp.user!.verifyTkn);
+	return showMessagePageResponse(ctx, `Signup success--Welcome '${username}'! You cannot login until you click the link in the verification email just sent. It may take a few minutes for that to appear in your inbox.`, 200);
 });
 
 app.get('/verify-email/:tkn', async function (c) {
@@ -52,11 +61,11 @@ app.get('/verify-email/:tkn', async function (c) {
 	const username = await c.env.SESSION.get(verifyTkn);
 	if (!username) {
 		await repoLogCreateCrit(c, `Bad email verification token: '${tkn}'`);
-		return c.html(<MessagePage ctx={c} message='Invalid email verification token!' />);
+		return showMessagePageResponse(c, 'Invalid email verification token!', 400);
 	}
 	await repoUserUpdate(c, username!, { emailVerified: true, verifyTkn: '' });
 	await c.env.SESSION.delete(verifyTkn);
-	return c.html(<MessagePage ctx={c} message='Your email is verified. You can login with the credentials you entered!' />);
+	return showMessagePageResponse(c, 'Your email is verified. You can login with the credentials you entered!', 200);
 });
 
 app.get('/login', function (ctx) {
@@ -66,35 +75,35 @@ app.get('/login', function (ctx) {
 	return ctx.html(<LoginPage ctx={ctx} csrfToken={tkn} />)
 });
 
-app.post('/login', async function (c) {
+app.post('/login', async function (ctx) {
 	console.log('Inside POST/login/password route');
-	const body = await c.req.parseBody();
-	// const csrfTkn = body['_csrf'] as string;
+	const body = await ctx.req.parseBody();
+	const csrfTkn = body['_csrf'] as string;
 	// if (csrfTkn != c.get('csrfTkn')) {
 	// 	console.error('BAD CSRF TOKEN!');
 	// 	///TODO: Log this!!! then clear everything and exit app with bad status
 	// }
 	const username = body['username'] as string;
 	const plainPass = body['password'] as string;
-	const { user, error } = await verifyPasswordReturnUser(c, username, plainPass);
+	let { user, error } = await verifyPasswordReturnUser(ctx, username, plainPass);
 	if (error) {
-		// If user is not null, then we received bad username
 		if (user) {
-			// If we have a user and error, this must be invalid pass
-			await repoLogCreateError(c, 'Bad password submitted', username);
+			// Handle user errors
+			// If user is NOT null but we have error, then we received bad password
+			error = 'Invalid password';
 			const fails = user!.loginFails += 1;
-			await repoUserUpdate(c, username, { loginFails: fails });
-			if (user.loginFails >= 3) {
-				await repoUserUpdate(c, username, { lockedReason: 'Too many failed login attempts' });
-				await repoLogCreateCrit(c, 'User locked: Too many failed login attempts', username);
+			if (fails >= 3) {
+				await repoUserUpdate(ctx, username, { loginFails: fails, lockedReason: 'Too many bad passwords' });
+				await repoLogCreateCrit(ctx, 'User locked: Too many failed login attempts', username);
+				error += ": You have 3+ invalid login attempts. Your user profile is locked. A password reset link will be sent to your email.";
+				///TODO: Send password reset link email
 			}
-			return c.html(<MessagePage ctx={c} message={error} />);
 		}
+		return ctx.html(<LoginPage ctx={ctx} csrfToken={csrfTkn} message={error} />, 400);
 	}
-	await repoUserUpdate(c, username, { lastLogin: new Date() });
-	await createSession(c, username, 3);
-	const mssg = `Login success--Welcome '${username}'!`;
-	return c.html(<MessagePage ctx={c} message={mssg} />);
+	await repoUserUpdate(ctx, username, { lastLogin: new Date() });
+	await createSession(ctx, username, 3);
+	return showMessagePageResponse(ctx, `Login success--Welcome '${username}'!`, 200);
 });
 
 export default app

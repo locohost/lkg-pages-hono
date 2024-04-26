@@ -1,6 +1,7 @@
 {
   "type": "module",
   "scripts": {
+		"start": "npm run dev",
     "dev": "npm run tw:b && vite",
     "build": "npm run pre",
     "deploy:prev": "npm run pre && wrangler pages deploy --branch preview",
