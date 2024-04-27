@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import type { Env, PostmarkResp, Vars } from "../types";
 import { createSession, verifyPasswordReturnUser } from '../lib/auth';
 import { sendPostmark } from '../lib/email';
-import { getSiteUrl, showMessagePageResponse } from '../lib/util';
+import { getSiteUrl, showMessagePageResponse, showToastError, showToastSuccess } from '../lib/util';
 import { LoginPage } from '../pages/login-page';
 import { SignupPage } from '../pages/signup-page';
 import { MessagePage } from '../pages/message-page';
@@ -99,11 +99,13 @@ app.post('/login', async function (ctx) {
 				///TODO: Send password reset link email
 			}
 		}
-		return ctx.html(<LoginPage ctx={ctx} csrfToken={csrfTkn} message={error} />, 400);
+		return showToastError(ctx, error);
+		//return ctx.html(<LoginPage ctx={ctx} csrfToken={csrfTkn} message={error} />, 400);
 	}
 	await repoUserUpdate(ctx, username, { lastLogin: new Date() });
 	await createSession(ctx, username, 3);
-	return showMessagePageResponse(ctx, `Login success--Welcome '${username}'!`, 200);
+	return showToastSuccess(ctx, `Login success--Welcome <strong>${username}</strong>!`);
+	//return showMessagePageResponse(ctx, `Login success--Welcome '${username}'!`, 200);
 });
 
 export default app

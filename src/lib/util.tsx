@@ -3,6 +3,22 @@ import { TurnstileOutcome } from '../types';
 import { MessagePage } from '../pages/message-page';
 import { StatusCode } from 'hono/utils/http-status';
 
+export function showToastError(ctx: Context, message: string) {
+	return ctx.html(`
+		<div class="alert alert-error" 						
+			hx-swap="outerHTML swap:3s"
+		><span>${message}</span></div>
+	`);
+}
+
+export function showToastSuccess(ctx: Context, message: string) {
+	return ctx.html(`
+		<div class="alert alert-success" 						
+			hx-swap="outerHTML swap:3s"
+		><span>${message}</span></div>
+	`);
+}
+
 export async function showMessagePageResponse(ctx: Context, message: string, code: StatusCode): Promise<Response> {
 	///TODO: Add logging here
 	return await ctx.html(<MessagePage ctx={ctx} message={message} />, code);
