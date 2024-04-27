@@ -15,8 +15,15 @@ export async function sendPostmark(
       Subject: subject,
       Tag: 'my-tag',
       HtmlBody: body,
-      TextBody: body,
-      MessageStream: 'broadcasts',
+      Headers: [
+        {
+          Name: 'X-Postmark-Server-Token',
+          Value: serverTkn,
+        },
+      ],
+      TrackOpens: true,
+      TrackLinks: 'HtmlOnly',
+      MessageStream: 'outbound',
     },
   ];
   const resp = await fetch(`https://api.postmarkapp.com/email/batch`, {
@@ -32,7 +39,7 @@ export async function sendPostmark(
 
   const data = await resp.text();
   console.log('sendPostmark resp: ', data);
-	return JSON.parse(data) as PostmarkResp;
+  return JSON.parse(data) as PostmarkResp;
 }
 
 export async function sendEmail(

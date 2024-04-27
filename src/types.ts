@@ -1,6 +1,7 @@
 export type User = {
   handle: string;
   email: string;
+	avatar: string;
   emailVerified: boolean;
   verifyTkn: string;
   pass: string;
@@ -14,6 +15,23 @@ export type User = {
   del: boolean | false;
 };
 
+export type UserInsert = {
+  handle: string;
+  email: string;
+	avatar?: string;
+  emailVerified?: boolean;
+  verifyTkn?: string;
+  pass?: string;
+  salt?: string;
+  lastLogin?: Date;
+  lastLoginIp?: string;
+  loginFails?: number;
+  lockedReason?: string;
+  created?: Date;
+  updated?: Date;
+  del?: boolean;
+};
+
 export type UserResp = {
   user?: User;
   error?: string;
@@ -22,6 +40,7 @@ export type UserResp = {
 export type UserUpdate = {
   handle?: string;
   email?: string;
+	avatar?: string;
   emailVerified?: boolean;
   verifyTkn?: string;
   pass?: string;
@@ -45,8 +64,9 @@ export type Log = {
 
 export type Sess = {
   id: string;
-  username: string;
+  handle: string;
   email: string;
+	avatar: string;
 };
 
 export type SessResp = {
@@ -55,6 +75,7 @@ export type SessResp = {
 };
 
 export type Env = {
+	DEFAULT_AVATAR: string;
   SITE_URL_DEV: string;
   SITE_URL_PROD: string;
   MG_CREDS: string;

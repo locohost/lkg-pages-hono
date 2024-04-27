@@ -1,6 +1,7 @@
-let tst = document.querySelector('.toast');
-if (tst && !tst.classList.contains('invisible')) {
+function clearToast(isError, wait) {
+  //console.log('Inside clearToast JS');
   setTimeout(function () {
-    tst.style.visibility = 'hidden';
-  }, 2000);
+    htmx.remove(htmx.find('.alert'));
+		if (!isError) document.location.href = '/';
+  }, wait ?? 3000);
 }

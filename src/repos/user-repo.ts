@@ -1,19 +1,19 @@
 import { Context } from 'hono';
 import { getHashedPasswordAndSalt } from '../lib/auth';
-import { User, UserResp, UserUpdate } from '../types';
+import { User, UserInsert, UserResp, UserUpdate } from '../types';
 import { Err } from '../constants';
 
 export async function repoUserCreate(
   c: Context,
-  handle: string,
-  email: string,
+  newUser: UserInsert,
   plainPass: string
 ): Promise<UserResp> {
   // Save new User to KV
   const { pass, salt } = await getHashedPasswordAndSalt(plainPass);
-  const user: User = {
-    handle,
-    email,
+  const user = {
+    handle: newUser.handle,
+    email: newUser.email,
+    avatar: newUser.avatar,
     emailVerified: false,
     verifyTkn: crypto.randomUUID(),
     pass,
@@ -25,9 +25,10 @@ export async function repoUserCreate(
     created: new Date(),
     updated: null,
     del: false,
-  };
+  } as User;
   console.log('repoUserCreate user: ', user);
-  await c.env.SESSION.put(`USER:${handle}`, JSON.stringify(user));
+  await c.env.SESSION.put(`USER:${user.handle}`, JSON.stringify(user));
+  await c.env.SESSION.put(`USER:${user.email}`, user.handle);
   return { user };
 }
 
@@ -49,21 +50,37 @@ export async function repoUserUpdate(
   const existing = await repoUserGetByUsername(c, username);
   if (!existing) return { error: Err.BadHandle };
   changedAttribs.updated = new Date();
-  const updated = { ...existing, ...changedAttribs } as User;
+  const updated = { ...existing.user, ...changedAttribs } as User;
   console.log('repoUserUpdate updatedUser: ', updated);
   await c.env.SESSION.put(`USER:${username}`, JSON.stringify(updated));
   return { user: updated };
 }
 
 export async function repoUserGetByUsername(
-  c: Context,
+  ctx: Context,
   username: string
 ): Promise<UserResp> {
-  const userStr = await c.env.SESSION.get(`USER:${username}`);
+  const userStr = await ctx.env.SESSION.get(`USER:${username}`);
   console.log('repoUserGetByUsername userStr: ', userStr);
-  if (!userStr) return { error: Err.BadHandle };
+  if (userStr == null || userStr == undefined) return { error: Err.BadHandle };
   const user = JSON.parse(userStr) as User;
-  return user.del == false ? { user } : { error: Err.BadHandle };
+  return user.del == true
+    ? { error: `getUserByHandle: ${Err.BadHandle}` }
+    : { user };
+}
+
+export async function repoUserGetByEmail(
+  ctx: Context,
+  email: string
+): Promise<UserResp> {
+  const handleStr = await ctx.env.SESSION.get(`USER:${email}`);
+  console.log('repoUserGetByEmail userStr: ', handleStr);
+  if (!handleStr) return { error: Err.BadEmail };
+  const userResp = await repoUserGetByUsername(ctx, handleStr);
+  if (userResp.error) return { error: `getUserByEmail: ${userResp.error}` };
+  return userResp.user!.del == false
+    ? { user: userResp.user }
+    : { error: Err.BadEmail };
 }
 
 export async function repoUserGetBySessionId(

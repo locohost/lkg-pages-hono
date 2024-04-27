@@ -18,7 +18,7 @@ export function getExpiration(hrs: number): {
 export async function sessionAuth(c: Context, next: Next) {
   const sess = await getSessionFromCookie(c);
   if (!sess) return c.redirect('/auth/login', 302);
-  c.set('sess', sess);
+  c.set('sess', sess.sess);
   return await next();
 }
 
@@ -46,23 +46,23 @@ export async function getHashedPasswordAndSalt(
   return { pass, salt };
 }
 
-export async function createSession(
-  c: Context,
-  username: string,
-  expireHrs: number
-): Promise<SessResp> {
-  const exp = getExpiration(expireHrs);
-  const sessResp = await repoSessionCreate(c, username, exp.seconds);
-  if (!sessResp.error) {
-    setCookie(c, 'session', sessResp.sess!.id, {
-      path: '/',
-      secure: true,
-      httpOnly: true,
-      expires: new Date(exp.milliseconds),
-    });
-  }
-  return sessResp;
-}
+// export async function createSession(
+//   c: Context,
+//   username: string,
+//   expireHrs: number
+// ): Promise<SessResp> {
+//   const exp = getExpiration(expireHrs);
+//   const sessResp = await repoSessionCreate(c, username, exp.seconds);
+//   if (!sessResp.error) {
+//     setCookie(c, 'session', sessResp.sess!.id, {
+//       path: '/',
+//       secure: true,
+//       httpOnly: true,
+//       expires: new Date(exp.milliseconds),
+//     });
+//   }
+//   return sessResp;
+// }
 
 export async function verifyPasswordReturnUser(
   c: Context,

@@ -3,6 +3,7 @@ import { getExpiration } from '../lib/auth';
 import { sendPostmark } from '../lib/email';
 import type { Env, Vars } from "../types";
 import { getSiteUrl, showMessagePageResponse } from '../lib/util';
+import { HomePage } from '../pages/home-page';
 
 const app = new Hono<{ Bindings: Env, Variables: Vars }>();
 
@@ -19,20 +20,22 @@ app.post('/subscribe', async function (ctx) {
 	const sendResp = await sendPostmark(ctx, email, mssgThanks, emailBody);
 	if (sendResp.ErrorCode > 0) {
 		///TODO: Clean the error message if on prod
-		return showMessagePageResponse(ctx, sendResp.Message, 400);
+		return ctx.html(<HomePage ctx={ctx} message={sendResp.Message} />);
 	}
-	return showMessagePageResponse(ctx, mssgThanks, 200);
+	return ctx.html(<HomePage ctx={ctx} message={mssgThanks} />);
 });
 
 app.get('/confirm-sub/:tkn', async function (ctx) {
 	const tkn = ctx.req.param('tkn') as string;
 	const email = await ctx.env.SESSION.get(`EMLSUB:${tkn}`) as string;
 	if (!email) {
-		return showMessagePageResponse(ctx, 'Invalid email verification token!', 400);
+		///TODO: Must log this!
+		return ctx.html(<HomePage ctx={ctx} message='Invalid email verification token!' />);
 	}
 	ctx.env.SESSION.put(`EMLSUB:${email}`, '1');
 	ctx.env.SESSION.delete(`EMLSUB:${tkn}`);
-	return showMessagePageResponse(ctx, "Your email subscription is confirmed! We'll send only occassional email updates on web site and game news.", 200);
+	const mssgThanks = "Your email subscription is confirmed! We'll send only occassional email updates on web site and game news.";
+	return ctx.html(<HomePage ctx={ctx} message={mssgThanks} />);
 });
 
 export default app

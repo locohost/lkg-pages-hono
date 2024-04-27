@@ -6,15 +6,22 @@ import { repoLogCreateError } from './log-repo';
 
 export async function repoSessionCreate(
   c: Context,
-  username: string,
+  user: User,
   expSeconds: number
 ): Promise<SessResp> {
   // Save new User to KV
   const sessId = crypto.randomUUID();
-  await c.env.SESSION.put(`SESS:${sessId}`, username, {
+  await c.env.SESSION.put(`SESS:${sessId}`, user.handle, {
     expiration: expSeconds,
   });
-  return { sess: { id: sessId, username, email: '' } };
+  return {
+    sess: {
+      id: sessId,
+      handle: user.handle,
+      email: user.email,
+      avatar: user.avatar,
+    },
+  };
 }
 
 export async function repoSessionGetById(
@@ -29,8 +36,9 @@ export async function repoSessionGetById(
   return {
     sess: {
       id: sessId,
-      username: userResp.user!.handle,
+      handle: userResp.user!.handle,
       email: userResp.user!.email,
+      avatar: userResp.user!.avatar ?? '',
     },
   };
 }

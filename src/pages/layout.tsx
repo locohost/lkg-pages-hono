@@ -21,15 +21,11 @@ export const Layout: FC<Props> = (props) => {
 			<body class="m-2">
 				<Navbar ctx={props.ctx}></Navbar>
 				<div class="px-7">
-					<style>
-						.fade-me-out.htmx-swapping &#123;
-						opacity: 0;
-						transition: opacity 2s ease-out;
-						&#125;</style>
-					<div class="toast toast-top toast-end fade-me-out"></div>
+					<div class="toast toast-top toast-end"></div>
 					{props.children}
 					<Footer></Footer>
 				</div>
+				<script type="text/javascript" src="/static/js/clear-toast.js" defer />
 			</body>
 		</html>
 	)

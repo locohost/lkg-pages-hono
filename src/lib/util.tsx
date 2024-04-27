@@ -3,19 +3,27 @@ import { TurnstileOutcome } from '../types';
 import { MessagePage } from '../pages/message-page';
 import { StatusCode } from 'hono/utils/http-status';
 
+export function showToastInfo(ctx: Context, message: string) {
+	return ctx.html(`
+		<div class="alert alert-info" 
+			hx-trigger="load[clearToast(1)]" 
+		><span>Hmmm... ${message}</span></div>
+	`);
+}
+
 export function showToastError(ctx: Context, message: string) {
 	return ctx.html(`
-		<div class="alert alert-error" 						
-			hx-swap="outerHTML swap:3s"
-		><span>${message}</span></div>
+		<div class="alert alert-error" 
+			hx-trigger="load[clearToast(1)]" 
+		><span>Oh no!... ${message}</span></div>
 	`);
 }
 
 export function showToastSuccess(ctx: Context, message: string) {
 	return ctx.html(`
 		<div class="alert alert-success" 						
-			hx-swap="outerHTML swap:3s"
-		><span>${message}</span></div>
+			hx-trigger="load[clearToast()]" 
+		><span>Huzzah! ${message}</span></div>
 	`);
 }
 

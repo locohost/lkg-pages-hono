@@ -23,7 +23,6 @@ export function LoginPage({ ctx, csrfToken }: { ctx: Context, csrfToken: string 
 };
 
 /**
-<script type="text/javascript" src="/static/js/clear-toast.js" defer />
 
 <section class="prompt">
 			<form action="/login/password" method="post">
