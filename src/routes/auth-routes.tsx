@@ -100,12 +100,10 @@ app.post('/login', async function (ctx) {
 			}
 		}
 		return showToastError(ctx, error);
-		//return ctx.html(<LoginPage ctx={ctx} csrfToken={csrfTkn} message={error} />, 400);
 	}
 	await repoUserUpdate(ctx, username, { lastLogin: new Date() });
 	await createSession(ctx, username, 3);
 	return showToastSuccess(ctx, `Login success--Welcome <strong>${username}</strong>!`);
-	//return showMessagePageResponse(ctx, `Login success--Welcome '${username}'!`, 200);
 });
 
 export default app
