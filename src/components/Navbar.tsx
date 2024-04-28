@@ -4,7 +4,9 @@ import { Sess } from "../types";
 export default function Navbar({ ctx }: { ctx: Context }) {
 	let { handle, avatar } = (ctx.get('sess') as Sess) ?? { handle: null, avatar: null };
 	handle = handle ?? 'Hello!';
+	console.debug('Navbar: handle: ', handle);
 	avatar = avatar ?? ctx.env.DEFAULT_AVATAR;
+	console.debug('Navbar: avatar: ', avatar);
 	return (
 		<div className="navbar bg-base-100">
 			<div className="navbar-start">
@@ -21,8 +23,8 @@ export default function Navbar({ ctx }: { ctx: Context }) {
 								<li><a>Submenu 2</a></li>
 							</ul>
 						</li>
-						<li><a href="/auth/signup">Signup</a></li>
-						<li><a href="/auth/login">Login</a></li>
+						<li><a href="/signup">Signup</a></li>
+						<li><a href="/login">Login</a></li>
 					</ul>
 				</div>
 				<a className="btn btn-ghost text-xl" href="/">LKG</a>
@@ -39,8 +41,8 @@ export default function Navbar({ ctx }: { ctx: Context }) {
 							</ul>
 						</details>
 					</li>
-					<li><a href="/auth/signup">Signup</a></li>
-					<li><a href="/auth/login">Login</a></li>
+					<li><a href="/signup">Signup</a></li>
+					<li><a href="/login">Login</a></li>
 				</ul>
 			</div>
 			<div className="navbar-end">

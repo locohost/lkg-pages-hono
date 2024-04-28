@@ -1,14 +1,14 @@
 {
   "type": "module",
   "scripts": {
-		"start": "npm run dev",
-    "dev": "npm run tw:b && vite",
+    "start": "npm run dev",
+    "dev": "npm run tw:b && vite --persist-to kv_data",
     "build": "npm run pre",
     "deploy:prev": "npm run pre && wrangler pages deploy --branch preview",
     "deploy:prod": "npm run pre && wrangler pages deploy --branch production",
-		"pre": "npm run tw:b && npm run v:b",
-		"tw:b": "tailwindcss -i ./src/input.css -o ./public/static/css/styles.css",
-		"v:b": "vite build"
+    "pre": "npm run tw:b && npm run v:b",
+    "tw:b": "tailwindcss -i ./src/input.css -o ./public/static/css/styles.css",
+    "v:b": "vite build"
   },
   "dependencies": {
     "form-data": "^4.0.0",

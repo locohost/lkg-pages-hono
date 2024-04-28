@@ -82,6 +82,7 @@ export type Env = {
   PM_TKN: string;
   ASSETS: Fetcher;
   SESSION: KVNamespace;
+	LNG_BUCKET: R2Bucket;
   SESS_SECRET: string;
   SALT: string;
   TS_SITEKEY: string;

@@ -15,20 +15,6 @@ export function getExpiration(hrs: number): {
   return { seconds: expSeconds, milliseconds: expMilliseconds };
 }
 
-export async function sessionAuth(c: Context, next: Next) {
-  const sess = await getSessionFromCookie(c);
-  if (!sess) return c.redirect('/auth/login', 302);
-  c.set('sess', sess.sess);
-  return await next();
-}
-
-export async function getSessionFromCookie(c: Context): Promise<SessResp> {
-  const sessId = getCookie(c, 'session');
-  console.log('auth.getSessionFromCookie sessId: ', sessId);
-  if (!sessId) return { error: 'Invalid session cookie' };
-  return await repoSessionGetById(c, sessId);
-}
-
 export async function getHashedPasswordAndSalt(
   plainPass: string,
   salt?: string
@@ -46,30 +32,12 @@ export async function getHashedPasswordAndSalt(
   return { pass, salt };
 }
 
-// export async function createSession(
-//   c: Context,
-//   username: string,
-//   expireHrs: number
-// ): Promise<SessResp> {
-//   const exp = getExpiration(expireHrs);
-//   const sessResp = await repoSessionCreate(c, username, exp.seconds);
-//   if (!sessResp.error) {
-//     setCookie(c, 'session', sessResp.sess!.id, {
-//       path: '/',
-//       secure: true,
-//       httpOnly: true,
-//       expires: new Date(exp.milliseconds),
-//     });
-//   }
-//   return sessResp;
-// }
-
 export async function verifyPasswordReturnUser(
-  c: Context,
+  ctx: Context,
   username: string,
   plainPass: string
 ): Promise<UserResp> {
-  const userResp = await repoUserGetByUsername(c, username);
+  const userResp = await repoUserGetByUsername(ctx, username);
   console.log('verifyPasswordReturnUser user: ', userResp.user);
   if (userResp.user) {
     const { pass } = await getHashedPasswordAndSalt(
@@ -80,6 +48,16 @@ export async function verifyPasswordReturnUser(
   }
   return userResp;
 }
+
+// ============================================================================
+// PRIVATE PARTS
+
+// async function getSessionFromCookie(c: Context): Promise<SessResp> {
+//   const sessId = getCookie(c, 'session');
+//   console.log('auth.getSessionFromCookie sessId: ', sessId);
+//   if (!sessId) return { error: 'Invalid session cookie' };
+//   return await repoSessionGetById(c, sessId);
+// }
 
 function hexStrFromArrBuff(myBuffer: ArrayBuffer): string {
   const hexString = [...new Uint8Array(myBuffer)]
