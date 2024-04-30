@@ -3,6 +3,7 @@ import { SessResp, User, Vars, Env, Sess } from '../types';
 import { repoUserGetBySessionId, repoUserGetByUsername } from './user-repo';
 import { repoLogCreateError } from './log-repo';
 import { KVPrfx } from '../constants';
+import { getReqIP } from '../lib/util';
 
 export async function repoSessionCreate(
   ctx: Context<{ Bindings: Env; Variables: Vars }>,
@@ -56,19 +57,4 @@ export async function repoSessionGetCsrf(
   console.log('repoSessionGetCsrf ip: ', ip);
   const csrf = await ctx.env.SESSION.get(`${KVPrfx.Csrf}:${ip}`);
   return csrf ?? undefined;
-}
-
-function getReqIP(
-  ctx: Context<{ Bindings: Env; Variables: Vars }>,
-  method: string
-): string | undefined {
-  console.log('headers: ', JSON.stringify(ctx.req.header));
-  if (ctx.req.url.toLocaleLowerCase().indexOf('localhost')) {
-    return 'dev-run-ip';
-  }
-  let ip = ctx.req.header('CF-Connecting-IP');
-  if (!ip) ip = ctx.req.header('True-Client-IP');
-  if (!ip)
-    throw new Error(`repoSession${method}Csrf: Cannot get User IP from header`);
-  return ip;
 }

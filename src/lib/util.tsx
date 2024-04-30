@@ -1,7 +1,23 @@
 import { Context } from 'hono';
-import { TurnstileOutcome } from '../types';
+import { Env, TurnstileOutcome, Vars } from '../types';
 import { MessagePage } from '../pages/message-page';
 import { StatusCode } from 'hono/utils/http-status';
+
+export function getReqIP(
+  ctx: Context<{ Bindings: Env; Variables: Vars }>,
+  method: string
+): string | undefined {
+  console.log('headers: ', JSON.stringify(ctx.req.header));
+  if (ctx.req.url.toLocaleLowerCase().indexOf('localhost')) {
+    return 'dev-run-ip';
+  }
+  let ip = ctx.req.header('CF-Connecting-IP');
+  if (ip == undefined) ip = ctx.req.header('True-Client-IP');
+  if (ip == undefined) ip = ctx.req.header('X-Forwarded-For');
+  if (ip == undefined)
+    throw new Error(`repoSession${method}Csrf: Cannot get User IP from header`);
+  return ip;
+}
 
 export function showToastInfo(ctx: Context, message: string) {
 	return ctx.html(`
