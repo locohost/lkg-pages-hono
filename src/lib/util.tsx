@@ -8,7 +8,8 @@ export function getReqIP(
 	method: string
 ): string | undefined {
 	console.log('headers: ', JSON.stringify(ctx.req.header));
-	if (ctx.req.url.toLocaleLowerCase().indexOf('localhost')) {
+	const isDev = ctx.req.url.toLocaleLowerCase().indexOf('localhost'); 
+	if (isDev && isDev > 0) {
 		return 'dev-run-ip';
 	}
 	let ip = ctx.req.header('cf-connecting-ip');
