@@ -1,5 +1,6 @@
 import { Context } from 'hono';
 import { Log } from '../types';
+import { KVPrfx } from '../constants';
 
 export async function repoLogCreateError(
   c: Context,
@@ -50,24 +51,5 @@ async function repoLogCreate(
   };
   console.log('repoLogCreate log: ', log);
 	const key = username ? `${logType}:${username}` : `${logType}`
-  await c.env.SESSION.put(`LOG:${key}`, JSON.stringify(log));
+  await c.env.SESSION.put(`${KVPrfx.Log}:${key}`, JSON.stringify(log));
 }
-
-// export async function repoUserGetByUsername(
-//   c: Context,
-//   username: string
-// ): Promise<User | null> {
-//   const userStr = await c.env.SESSION.get(`USER:${username}`);
-//   if (userStr == null) return null;
-//   const user = JSON.parse(userStr) as User;
-//   return user.del == false ? user : null;
-// }
-
-// export async function repoUserGetBySessionId(
-//   c: Context,
-//   sessId: string
-// ): Promise<User | null> {
-//   const username = await c.env.SESSION.get(`SESS:${sessId}`);
-//   if (username == null) return null;
-//   return await repoUserGetByUsername(c, username);
-// }

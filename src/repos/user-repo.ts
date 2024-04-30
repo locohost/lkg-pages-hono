@@ -1,7 +1,7 @@
 import { Context } from 'hono';
 import { getHashedPasswordAndSalt } from '../lib/auth';
-import { User, UserInsert, UserResp, UserUpdate } from '../types';
-import { Err } from '../constants';
+import { Env, User, UserInsert, UserResp, UserUpdate, Vars } from '../types';
+import { Err, KVPrfx } from '../constants';
 
 export async function repoUserCreate(
   c: Context,
@@ -27,8 +27,11 @@ export async function repoUserCreate(
     del: false,
   } as User;
   console.log('repoUserCreate user: ', user);
-  await c.env.SESSION.put(`USER:${user.handle}`, JSON.stringify(user));
-  await c.env.SESSION.put(`USER:${user.email}`, user.handle);
+  await c.env.SESSION.put(
+    `${KVPrfx.UserData}:${user.handle}`,
+    JSON.stringify(user)
+  );
+  await c.env.SESSION.put(`${KVPrfx.UserEmail}:${user.email}`, user.handle);
   return { user };
 }
 
@@ -38,29 +41,34 @@ export async function repoUserCreateEmailVerify(
   tkn: string
 ) {
   console.log('repoUserCreateEmailVerify tkn: ', tkn);
-  await ctx.env.SESSION.put(`USER:EVTKN:${tkn}`, handle);
+  await ctx.env.SESSION.put(`${KVPrfx.EmailVerify}:${tkn}`, handle);
 }
 
 export async function repoUserUpdate(
-  c: Context,
-  username: string,
+  ctx: Context<{ Bindings: Env; Variables: Vars }>,
+  handle: string,
   changedAttribs: UserUpdate
 ): Promise<UserResp> {
   // Update new User to KV
-  const existing = await repoUserGetByUsername(c, username);
+  const existing = await repoUserGetByUsername(ctx, handle);
   if (!existing) return { error: Err.BadHandle };
   changedAttribs.updated = new Date();
   const updated = { ...existing.user, ...changedAttribs } as User;
   console.log('repoUserUpdate updatedUser: ', updated);
-  await c.env.SESSION.put(`USER:${username}`, JSON.stringify(updated));
+  await ctx.env.SESSION.put(
+    `${KVPrfx.UserData}:${handle}`,
+    JSON.stringify(updated)
+  );
   return { user: updated };
 }
 
 export async function repoUserGetByUsername(
-  ctx: Context,
+  ctx: Context<{ Bindings: Env; Variables: Vars }>,
   username: string
 ): Promise<UserResp> {
-  const userStr = await ctx.env.SESSION.get(`USER:${username}`);
+  const userStr = await ctx.env.SESSION.get(
+    `${KVPrfx.UserData}:${username}`
+  );
   console.log('repoUserGetByUsername userStr: ', userStr);
   if (userStr == null || userStr == undefined) return { error: Err.BadHandle };
   const user = JSON.parse(userStr) as User;
@@ -70,10 +78,12 @@ export async function repoUserGetByUsername(
 }
 
 export async function repoUserGetByEmail(
-  ctx: Context,
+  ctx: Context<{ Bindings: Env; Variables: Vars }>,
   email: string
 ): Promise<UserResp> {
-  const handleStr = await ctx.env.SESSION.get(`USER:${email}`);
+  const handleStr = await ctx.env.SESSION.get(
+    `${KVPrfx.UserEmail}:${email}`
+  );
   console.log('repoUserGetByEmail userStr: ', handleStr);
   if (!handleStr) return { error: Err.BadEmail };
   const userResp = await repoUserGetByUsername(ctx, handleStr);
@@ -84,10 +94,37 @@ export async function repoUserGetByEmail(
 }
 
 export async function repoUserGetBySessionId(
-  c: Context,
+  ctx: Context<{ Bindings: Env; Variables: Vars }>,
   sessId: string
 ): Promise<UserResp> {
-  const username = await c.env.SESSION.get(`SESS:${sessId}`);
+  const username = await ctx.env.SESSION.get(`${KVPrfx.Session}:${sessId}`);
   if (!username) return { error: 'Invalid session id' };
-  return await repoUserGetByUsername(c, username);
+  return await repoUserGetByUsername(ctx, username);
+}
+/*
+{
+  "keys": [
+    {
+      "name": "foo",
+      "expiration": 1234,
+      "metadata": { "someMetadataKey": "someMetadataValue" }
+    }
+  ],
+  "list_complete": false,
+  "cursor": "6Ck1la0VxJ0djhidm1MdX2FyD"
+}
+*/
+export async function repoUserGetAll(
+  ctx: Context<{ Bindings: Env; Variables: Vars }>
+): Promise<User[]> {
+  const kvKeysList = await ctx.env.SESSION.list({
+    prefix: `${KVPrfx.UserData}:`,
+  });
+  console.log('reposUserGetAll kvKeysList: ', kvKeysList);
+  const users: User[] = [];
+  kvKeysList.keys.forEach(async (key) => {
+    const userJson = await ctx.env.SESSION.get(key.name);
+    if (userJson) users.push(JSON.parse(userJson));
+  });
+  return users;
 }

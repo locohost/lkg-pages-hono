@@ -27,23 +27,21 @@ export function showToastSuccess(ctx: Context, message: string) {
 	`);
 }
 
+///TODO: This might be deprecated, check then delete
 export async function showMessagePageResponse(ctx: Context, message: string, code: StatusCode): Promise<Response> {
 	///TODO: Add logging here
 	return await ctx.html(<MessagePage ctx={ctx} message={message} />, code);
 }
 
 export function getSiteUrlByEnv(ctx: Context) {
-	const url = ctx.req.url;
-	if (url.toLowerCase().indexOf('lateknight.games')) {
+	const url = ctx.req.url.toLowerCase();
+	if (url.indexOf('lateknight.games')) {
 		return ctx.env.SITE_URL_PROD;
-	} else {
-		return ctx.env.SITE_URL_DEV;
 	}
-}
-
-export function getSiteUrl(ctx: Context) {
-	const parts = ctx.req.url.split('/');
-	return `${parts[0]}//${parts[2]}`;
+	if (url.indexOf('.pages.dev')) {
+		return ctx.env.SITE_URL_PREV;
+	}
+	return ctx.env.SITE_URL_DEV;
 }
 
 export async function turnstileVerify(ctx: Context) {

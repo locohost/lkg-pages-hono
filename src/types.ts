@@ -1,7 +1,7 @@
 export type User = {
   handle: string;
   email: string;
-	avatar: string;
+  avatar: string;
   emailVerified: boolean;
   verifyTkn: string;
   pass: string;
@@ -10,6 +10,7 @@ export type User = {
   lastLoginIp: string | null;
   loginFails: number | 0;
   lockedReason: string | null;
+	roles: string[];
   created: Date;
   updated: Date | null;
   del: boolean | false;
@@ -18,7 +19,7 @@ export type User = {
 export type UserInsert = {
   handle: string;
   email: string;
-	avatar?: string;
+  avatar?: string;
   emailVerified?: boolean;
   verifyTkn?: string;
   pass?: string;
@@ -27,6 +28,7 @@ export type UserInsert = {
   lastLoginIp?: string;
   loginFails?: number;
   lockedReason?: string;
+	roles?: string[];
   created?: Date;
   updated?: Date;
   del?: boolean;
@@ -40,7 +42,7 @@ export type UserResp = {
 export type UserUpdate = {
   handle?: string;
   email?: string;
-	avatar?: string;
+  avatar?: string;
   emailVerified?: boolean;
   verifyTkn?: string;
   pass?: string;
@@ -49,6 +51,7 @@ export type UserUpdate = {
   lastLoginIp?: string;
   loginFails?: number;
   lockedReason?: string;
+	roles?: string[];
   created?: Date;
   updated?: Date;
   del?: boolean;
@@ -66,7 +69,8 @@ export type Sess = {
   id: string;
   handle: string;
   email: string;
-	avatar: string;
+  avatar: string;
+	roles: string[];
 };
 
 export type SessResp = {
@@ -75,14 +79,15 @@ export type SessResp = {
 };
 
 export type Env = {
-	DEFAULT_AVATAR: string;
+  DEFAULT_AVATAR: string;
   SITE_URL_DEV: string;
+  SITE_URL_PREV: string;
   SITE_URL_PROD: string;
   MG_CREDS: string;
   PM_TKN: string;
   ASSETS: Fetcher;
   SESSION: KVNamespace;
-	LNG_BUCKET: R2Bucket;
+  LNG_BUCKET: R2Bucket;
   SESS_SECRET: string;
   SALT: string;
   TS_SITEKEY: string;
