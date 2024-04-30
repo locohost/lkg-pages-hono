@@ -5,9 +5,9 @@ export default function Navbar({ ctx }: { ctx: Context }) {
 	let { handle, avatar } =
 		(ctx.get('sess') as Sess) ?? { handle: null, avatar: null };
 	handle = handle ?? 'Hello!';
-	console.debug('Navbar: handle: ', handle);
-	avatar = avatar ?? ctx.env.DEFAULT_AVATAR;
-	console.debug('Navbar: avatar: ', avatar);
+	console.log('Navbar: handle: ', handle);
+	avatar = avatar ?? ctx.env.DEFAULT_AVATAR as string;
+	console.log('Navbar: avatar: ', avatar);
 	return (
 		<div className="navbar bg-base-100">
 			<div className="navbar-start">
