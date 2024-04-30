@@ -66,7 +66,6 @@ export type Log = {
 };
 
 export type Sess = {
-  id: string;
   handle: string;
   email: string;
   avatar: string;

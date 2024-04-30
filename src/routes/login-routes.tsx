@@ -45,9 +45,9 @@ app.post('/login', async function (ctx) {
 	}
 	// Create session
 	const exp = getExpiration(3);
-	const sess = await repoSessionCreate(ctx, user!, exp.seconds);
-	if (sess) {
-		setCookie(ctx, 'session', sess.id, {
+	const sessId = await repoSessionCreate(ctx, user!, exp.seconds);
+	if (sessId) {
+		setCookie(ctx, 'session', sessId, {
 			path: '/',
 			secure: true,
 			httpOnly: true,

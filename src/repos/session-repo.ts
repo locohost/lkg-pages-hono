@@ -9,15 +9,14 @@ export async function repoSessionCreate(
   ctx: Context<{ Bindings: Env; Variables: Vars }>,
   user: User,
   expSeconds: number
-): Promise<Sess> {
-  const sessId = crypto.randomUUID();
+): Promise<string> {
   const sess = {
-    id: sessId,
     handle: user.handle,
     email: user.email,
     avatar: user.avatar,
-    roles: user.roles,
+    roles: user.roles ?? ['webuser'],
   };
+  const sessId = crypto.randomUUID();
   await ctx.env.SESSION.put(
     `${KVPrfx.Session}:${sessId}`,
     JSON.stringify(sess),
@@ -25,7 +24,7 @@ export async function repoSessionCreate(
       expiration: expSeconds,
     }
   );
-  return sess;
+  return sessId;
 }
 
 export async function repoSessionGetById(
