@@ -1,19 +1,6 @@
-import { Context, Next } from 'hono';
-import { getCookie, setCookie } from 'hono/cookie';
+import { Context } from 'hono';
 import type { UserResp, SessResp } from '../types';
-import { Err } from '../constants';
 import { repoUserGetByUsername } from '../repos/user-repo';
-import { repoSessionCreate, repoSessionGetById } from '../repos/session-repo';
-
-export function getExpiration(hrs: number): {
-  seconds: number;
-  milliseconds: number;
-} {
-  const d = new Date();
-  const expMilliseconds = Math.round(d.getTime() + hrs * 60 * 60 * 1000);
-  const expSeconds = expMilliseconds / 1000;
-  return { seconds: expSeconds, milliseconds: expMilliseconds };
-}
 
 export async function getHashedPasswordAndSalt(
   plainPass: string,

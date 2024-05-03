@@ -51,9 +51,9 @@ export async function repoSessionCreateCsrf(
 
 export async function repoSessionGetCsrf(
   ctx: Context<{ Bindings: Env; Variables: Vars }>
-) {
+): Promise<{ ip: string | undefined, tkn: string | null } | undefined> {
   const ip = getReqIP(ctx, 'Get');
   console.log('repoSessionGetCsrf ip: ', ip);
-  const csrf = await ctx.env.SESSION.get(`${KVPrfx.Csrf}:${ip}`);
-  return csrf ?? undefined;
+  const tkn = await ctx.env.SESSION.get(`${KVPrfx.Csrf}:${ip}`);
+  return tkn != null ? { ip, tkn } : undefined;
 }

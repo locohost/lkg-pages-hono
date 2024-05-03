@@ -1,12 +1,16 @@
-import { Context, Hono } from 'hono';
-import type { Env, Vars } from "../types";
-import { getExpiration, verifyPasswordReturnUser } from '../lib/auth';
-import { showToastError, showToastSuccess } from '../lib/util';
-import { LoginPage } from '../pages/login-page';
+import { Hono } from 'hono';
+import { setCookie } from 'hono/cookie';
+import { verifyPasswordReturnUser } from '../lib/auth';
+import { getExpiration, showToastError, showToastSuccess } from '../lib/util';
 import { repoUserUpdate } from '../repos/user-repo';
 import { repoLogCreateCrit } from '../repos/log-repo';
-import { repoSessionCreate, repoSessionCreateCsrf, repoSessionGetCsrf } from '../repos/session-repo';
-import { setCookie } from 'hono/cookie';
+import {
+	repoSessionCreate, repoSessionCreateCsrf,
+	repoSessionGetCsrf
+} from '../repos/session-repo';
+import type { Env, Vars } from "../types";
+import { LoginPage } from '../pages/login-page';
+import { Err } from '../constants';
 
 const app = new Hono<{ Bindings: Env, Variables: Vars }>();
 
@@ -20,12 +24,12 @@ app.post('/login', async function (ctx) {
 	console.log('Inside POST/login/password route');
 	const body = await ctx.req.parseBody();
 	const csrfTkn = body['_csrf'] as string;
-	const storedTkn = await repoSessionGetCsrf(ctx);
-	if (csrfTkn != storedTkn) {
-		console.error(`BAD CSRF TOKEN! PageTkn:${csrfTkn} SessTkn:${storedTkn}`);
-		///TODO: Log this!!! then clear everything and exit app with bad status
-	}
+	const sessCsrf = await repoSessionGetCsrf(ctx);
 	const username = body['username'] as string;
+	if (csrfTkn != sessCsrf?.tkn) {
+		console.error(`BAD CSRF TOKEN! Username:${username}, PageTkn:${csrfTkn}, SessTkn:${sessCsrf?.tkn}, IP:${sessCsrf?.ip}`);
+		await repoLogCreateCrit(ctx, Err.InvalidCsrfTkn, username, sessCsrf?.ip);
+	}
 	const plainPass = body['password'] as string;
 	let { user, error } = await verifyPasswordReturnUser(ctx, username, plainPass);
 	if (error) {

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { getExpiration } from '../lib/auth';
+import { getExpiration } from '../lib/util';
 import { sendPostmark } from '../lib/email';
 import type { Env, Vars } from "../types";
 import { getSiteUrlByEnv } from '../lib/util';

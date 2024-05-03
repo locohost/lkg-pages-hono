@@ -60,6 +60,7 @@ export type UserUpdate = {
 export type Log = {
   type: string;
   message: string;
+  username: string;
   requestIp: string | null;
   created: Date;
   del: boolean | false;

@@ -3,6 +3,16 @@ import { Env, TurnstileOutcome, Vars } from '../types';
 import { MessagePage } from '../pages/message-page';
 import { StatusCode } from 'hono/utils/http-status';
 
+export function getExpiration(hrs: number): {
+  seconds: number;
+  milliseconds: number;
+} {
+  const d = new Date();
+  const expMilliseconds = Math.round(d.getTime() + hrs * 60 * 60 * 1000);
+  const expSeconds = expMilliseconds / 1000;
+  return { seconds: expSeconds, milliseconds: expMilliseconds };
+}
+
 export function getReqIP(
 	ctx: Context<{ Bindings: Env; Variables: Vars }>,
 	method: string

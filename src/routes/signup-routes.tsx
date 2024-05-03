@@ -5,7 +5,7 @@ import { showToastError, showToastSuccess, showToastInfo, getSiteUrlByEnv } from
 import { SignupPage } from '../pages/signup-page';
 import { repoUserCreate, repoUserCreateEmailVerify, repoUserGetByEmail, repoUserGetByUsername, repoUserUpdate } from '../repos/user-repo';
 import { repoLogCreateCrit, repoLogCreateError } from '../repos/log-repo';
-import { KVPrfx, MDAvatar } from '../constants';
+import { Err, KVPrfx, MDAvatar } from '../constants';
 import { HomePage } from '../pages/home-page';
 import { repoSessionCreateCsrf, repoSessionGetCsrf } from '../repos/session-repo';
 
@@ -26,10 +26,10 @@ app.post('/signup', async function (ctx) {
 	const confirm = (body['confirm'] as string).trim();
 	const avatar = body['avatar'] as File;
 	const csrfTkn = body['_csrf'] as string;
-	const storedTkn = await repoSessionGetCsrf(ctx);
-	if (csrfTkn != storedTkn) {
-		console.error('BAD CSRF TOKEN!');
-		///TODO: Log this!!! then clear everything and exit app with bad status
+	const sessCsrf = await repoSessionGetCsrf(ctx);
+	if (csrfTkn != sessCsrf?.tkn) {
+		console.error(`BAD CSRF TOKEN! Username:${username}, PageTkn:${csrfTkn}, SessTkn:${sessCsrf?.tkn}, IP:${sessCsrf?.ip}`);
+		await repoLogCreateCrit(ctx, Err.InvalidCsrfTkn, username,sessCsrf?.ip);
 	}
 	if (plainPass != confirm) {
 		return showToastInfo(ctx, 'Password and Confirm do not match');
@@ -61,10 +61,10 @@ app.post('/signup', async function (ctx) {
 		return showToastError(ctx, userResp.error);
 	}
 	// Upload User avatar to R2
-	if (avatar.name) {
+	if (avatar && avatar instanceof File) {
 		const avatarPath = `/static/avatar/${avatar.name}`;
-		const avatarBuff = await avatar.arrayBuffer();
-		const r2Obj = await ctx.env.LNG_BUCKET.put(avatarPath, avatarBuff);
+		// const avatarBuff = await avatar.arrayBuffer();
+		const r2Obj = await ctx.env.LNG_BUCKET.put(avatarPath, avatar);
 		console.log('r2Obj: ', r2Obj);
 	}
 	const url = getSiteUrlByEnv(ctx);

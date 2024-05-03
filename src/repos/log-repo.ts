@@ -1,13 +1,13 @@
 import { Context } from 'hono';
-import { Log } from '../types';
+import { Env, Log } from '../types';
 import { KVPrfx } from '../constants';
 
 export async function repoLogCreateError(
-  c: Context,
+  ctx: Context,
   message: string,
   username?: string
 ) {
-  return repoLogCreate(c, 'ERR', message);
+  return repoLogCreate(ctx, 'ERR', message);
 }
 
 export async function repoLogCreateWarn(
@@ -19,37 +19,39 @@ export async function repoLogCreateWarn(
 }
 
 export async function repoLogCreateInfo(
-  c: Context,
+  ctx: Context,
   message: string,
   username?: string
 ) {
-  return repoLogCreate(c, 'INFO', message);
+  return repoLogCreate(ctx, 'INFO', message);
 }
 
 export async function repoLogCreateCrit(
-  c: Context,
+  ctx: Context,
   message: string,
-  username?: string
+  username?: string,
+  ip?: string
 ) {
-  return repoLogCreate(c, 'CRIT', message, username);
+  return repoLogCreate(ctx, 'CRIT', message, username, ip);
 }
 
 async function repoLogCreate(
-  c: Context,
+  ctx: Context<{ Bindings: Env }>,
   logType: string,
   message: string,
-  username?: string
+  username?: string,
+  ip?: string
 ) {
-  var ip = c.req.header('x-forwarded-for') || null;
-  console.log('repoLogCreate ip:', ip);
   const log: Log = {
     type: logType,
     message,
-    requestIp: ip,
+    username: username ?? '',
+    requestIp: ip ?? '',
     created: new Date(),
     del: false,
   };
   console.log('repoLogCreate log: ', log);
-	const key = username ? `${logType}:${username}` : `${logType}`
-  await c.env.SESSION.put(`${KVPrfx.Log}:${key}`, JSON.stringify(log));
+  const key = username ? `${logType}:${username}` : `${logType}`;
+  await ctx.env.SESSION.put(`${KVPrfx.Log}:${key}`, JSON.stringify(log));
+  ///TODO: If type is CRIT, send email to admins
 }
