@@ -1,12 +1,13 @@
 import { Context } from "hono";
-import { Sess } from "../types";
+import { Env, Sess, Vars } from "../types";
 
-export default function Navbar({ ctx }: { ctx: Context }) {
+export default function Navbar({ ctx }: { ctx: Context<{ Bindings: Env, Variables: Vars }> }) {
 	let { handle, avatar } =
 		(ctx.get('sess') as Sess) ?? { handle: null, avatar: null };
 	handle = handle ?? 'Hello!';
 	console.log('Navbar: handle: ', handle);
-	avatar = avatar ?? ctx.env.DEFAULT_AVATAR as string;
+	//avatar = avatar ?? ctx.env.DEFAULT_AVATAR as string;
+	avatar = `${ctx.env.AVATAR_PATH}/${avatar ?? ctx.env.DEFAULT_AVATAR}/public`;
 	console.log('Navbar: avatar: ', avatar);
 	return (
 		<div className="navbar bg-base-100">

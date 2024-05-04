@@ -10,7 +10,7 @@ export type User = {
   lastLoginIp: string | null;
   loginFails: number | 0;
   lockedReason: string | null;
-	roles: string[];
+  roles: string[];
   created: Date;
   updated: Date | null;
   del: boolean | false;
@@ -28,7 +28,7 @@ export type UserInsert = {
   lastLoginIp?: string;
   loginFails?: number;
   lockedReason?: string;
-	roles?: string[];
+  roles?: string[];
   created?: Date;
   updated?: Date;
   del?: boolean;
@@ -51,7 +51,7 @@ export type UserUpdate = {
   lastLoginIp?: string;
   loginFails?: number;
   lockedReason?: string;
-	roles?: string[];
+  roles?: string[];
   created?: Date;
   updated?: Date;
   del?: boolean;
@@ -70,7 +70,7 @@ export type Sess = {
   handle: string;
   email: string;
   avatar: string;
-	roles: string[];
+  roles: string[];
 };
 
 export type SessResp = {
@@ -79,6 +79,9 @@ export type SessResp = {
 };
 
 export type Env = {
+  CF_ACCT_ID: string;
+  CF_IMAGES_TOKEN: string;
+  AVATAR_PATH: string;
   DEFAULT_AVATAR: string;
   SITE_URL_DEV: string;
   SITE_URL_PREV: string;
@@ -97,6 +100,14 @@ export type Env = {
 export type Vars = {
   sess: Sess;
   csrfTkn: string;
+};
+
+export type UploadResp = { 
+	result: { 
+		id: string, 
+		filename: string, 
+		variants: string[] 
+	} 
 };
 
 export type TurnstileOutcome = {

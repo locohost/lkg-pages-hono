@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
-import type { Env, UserInsert, Vars } from "../types";
+import type { Env, UploadResp, UserInsert, Vars } from "../types";
 import { sendPostmark } from '../lib/email';
-import { showToastError, showToastSuccess, showToastInfo, getSiteUrlByEnv } from '../lib/util';
+import { showToastError, showToastSuccess, showToastInfo, getSiteUrlByEnv, uploadToCFImages } from '../lib/util';
 import { SignupPage } from '../pages/signup-page';
 import { repoUserCreate, repoUserCreateEmailVerify, repoUserGetByEmail, repoUserGetByUsername, repoUserUpdate } from '../repos/user-repo';
 import { repoLogCreateCrit, repoLogCreateError } from '../repos/log-repo';
@@ -29,7 +29,7 @@ app.post('/signup', async function (ctx) {
 	const sessCsrf = await repoSessionGetCsrf(ctx);
 	if (csrfTkn != sessCsrf?.tkn) {
 		console.error(`BAD CSRF TOKEN! Username:${username}, PageTkn:${csrfTkn}, SessTkn:${sessCsrf?.tkn}, IP:${sessCsrf?.ip}`);
-		await repoLogCreateCrit(ctx, Err.InvalidCsrfTkn, username,sessCsrf?.ip);
+		await repoLogCreateCrit(ctx, Err.InvalidCsrfTkn, username, sessCsrf?.ip);
 	}
 	if (plainPass != confirm) {
 		return showToastInfo(ctx, 'Password and Confirm do not match');
@@ -50,23 +50,49 @@ app.post('/signup', async function (ctx) {
 	if (checkResp.user) {
 		return showToastInfo(ctx, `Email '${email}' already exists. Did you mean to login?`);
 	}
-	// All guards passed, create the new user profile
+	// Run avatar file info guards
+	const avatarInfo: { name: string, file: File | null } = {
+		name: ctx.env.DEFAULT_AVATAR,
+		file: null
+	};
+	if (avatar && avatar.name.length < 4) {
+		return showToastError(ctx, 'Avatar file name is blank or too short');
+	}
+	// Test the avatar fileName type extension
+	const ap = avatar.name.split('.');
+	const ext = ap[ap.length - 1];
+	if (['jpg', 'jpeg', 'png'].indexOf(ext) < 0) {
+		return showToastError(ctx, 'Avatar file type must be .jpg, .jpeg or .png');
+	}
+	avatarInfo.name = avatar.name;
+	if (avatar && avatar instanceof File) {
+		avatarInfo.file = avatar
+	}
+	// Upload User avatar to CF Images
+	let imgUpload: UploadResp;
+	if (avatarInfo.file instanceof File) {
+		const ruid = crypto.randomUUID();
+		const fileName = `${avatarInfo.name}-${username}-${ruid}`;
+		const imageResp = await uploadToCFImages(ctx.env.CF_ACCT_ID, ctx.env.CF_IMAGES_TOKEN, avatarInfo.file, fileName);
+		console.log('Image upload resp: ', imageResp);
+		//console.log('Image upload resp.json: ', await imageResp.json());
+		if (imageResp!.status != 200) {
+			return showToastError(ctx, `Avatar file file upload failed: ${imageResp.statusText}`);
+		}
+		imgUpload = await imageResp.json() as UploadResp;
+		console.log('Image upload resp.json: ', imgUpload);
+	}
+	// All guards passed, avatar uploaded: Create the new user profile
 	const newUser = {
 		handle: username,
 		email: email,
-		avatar: MDAvatar
+		avatar: imgUpload!.result.id
 	} as UserInsert;
 	const userResp = await repoUserCreate(ctx, newUser, plainPass);
 	if (userResp.error) {
 		return showToastError(ctx, userResp.error);
 	}
-	// Upload User avatar to R2
-	if (avatar && avatar instanceof File) {
-		const avatarPath = `/static/avatar/${avatar.name}`;
-		// const avatarBuff = await avatar.arrayBuffer();
-		const r2Obj = await ctx.env.LNG_BUCKET.put(avatarPath, avatar);
-		console.log('r2Obj: ', r2Obj);
-	}
+	// Send user email verification token/link
 	const url = getSiteUrlByEnv(ctx);
 	const href = `${url}/verify-email/${userResp.user!.verifyTkn}`;
 	const emailBody = `Please click this link to verify your email address and activate your Late Knight Games new user profile<br/><br/><a href="${href}">Verify this email</a>`;
@@ -74,6 +100,7 @@ app.post('/signup', async function (ctx) {
 	if (sendResp.ErrorCode > 0) {
 		return showToastError(ctx, sendResp.Message);
 	}
+	// Create the user email verification record in db
 	await repoUserCreateEmailVerify(ctx, userResp.user!.handle, userResp.user!.verifyTkn);
 	return showToastSuccess(ctx, `Signup success--Welcome '${username}'! You cannot login until you click the link in the verification email just sent. It may take a few minutes for that to appear in your inbox.`);
 });

@@ -3,14 +3,30 @@ import { Env, TurnstileOutcome, Vars } from '../types';
 import { MessagePage } from '../pages/message-page';
 import { StatusCode } from 'hono/utils/http-status';
 
+export async function uploadToCFImages(acctId: string, apiToken: string, file: File, fileName: string) {
+	const formData = new FormData();
+	//const fileBlob = new Blob([file]);
+	formData.append("file", file, fileName);
+	formData.append('metadata', JSON.stringify({ 'metakey': 'metaval' }));
+	formData.append('requireSignedURLs', 'false');
+	return await fetch(`https://api.cloudflare.com/client/v4/accounts/${acctId}/images/v1`, {
+		method: 'POST',
+		headers: {
+			'Authorization': `Bearer ${apiToken}`,
+		},
+		// @ts-ignore
+		body: formData
+	});
+}
+
 export function getExpiration(hrs: number): {
-  seconds: number;
-  milliseconds: number;
+	seconds: number;
+	milliseconds: number;
 } {
-  const d = new Date();
-  const expMilliseconds = Math.round(d.getTime() + hrs * 60 * 60 * 1000);
-  const expSeconds = expMilliseconds / 1000;
-  return { seconds: expSeconds, milliseconds: expMilliseconds };
+	const d = new Date();
+	const expMilliseconds = Math.round(d.getTime() + hrs * 60 * 60 * 1000);
+	const expSeconds = expMilliseconds / 1000;
+	return { seconds: expSeconds, milliseconds: expMilliseconds };
 }
 
 export function getReqIP(
@@ -18,7 +34,7 @@ export function getReqIP(
 	method: string
 ): string | undefined {
 	console.log('headers: ', JSON.stringify(ctx.req.header));
-	const isDev = ctx.req.url.toLocaleLowerCase().indexOf('localhost'); 
+	const isDev = ctx.req.url.toLocaleLowerCase().indexOf('localhost');
 	if (isDev && isDev > 0) {
 		return 'dev-run-ip';
 	}
