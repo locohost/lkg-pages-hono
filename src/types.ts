@@ -100,6 +100,7 @@ export type Env = {
 export type Vars = {
   sess: Sess;
   csrfTkn: string;
+	errMssg: string;
 };
 
 export type UploadResp = { 

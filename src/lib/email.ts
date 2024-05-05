@@ -5,7 +5,8 @@ export async function sendPostmark(
   c: Context,
   to: string,
   subject: string,
-  body: string
+  body: string,
+	tag: string
 ) {
   const serverTkn = c.env.PM_TKN;
   const mssgs = [
@@ -13,7 +14,7 @@ export async function sendPostmark(
       From: 'admin@lateknight.games',
       To: to,
       Subject: subject,
-      Tag: 'my-tag',
+      Tag: tag,
       HtmlBody: body,
       Headers: [
         {

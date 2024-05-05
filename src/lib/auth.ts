@@ -1,5 +1,5 @@
 import { Context } from 'hono';
-import type { UserResp, SessResp } from '../types';
+import type { UserResp } from '../types';
 import { repoUserGetByUsername } from '../repos/user-repo';
 
 export async function getHashedPasswordAndSalt(
@@ -36,17 +36,7 @@ export async function verifyPasswordReturnUser(
   return userResp;
 }
 
-// ============================================================================
-// PRIVATE PARTS
-
-// async function getSessionFromCookie(c: Context): Promise<SessResp> {
-//   const sessId = getCookie(c, 'session');
-//   console.log('auth.getSessionFromCookie sessId: ', sessId);
-//   if (!sessId) return { error: 'Invalid session cookie' };
-//   return await repoSessionGetById(c, sessId);
-// }
-
-function hexStrFromArrBuff(myBuffer: ArrayBuffer): string {
+export function hexStrFromArrBuff(myBuffer: ArrayBuffer): string {
   const hexString = [...new Uint8Array(myBuffer)]
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');

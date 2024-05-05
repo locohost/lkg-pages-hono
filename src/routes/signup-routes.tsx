@@ -2,35 +2,30 @@ import { Hono } from 'hono';
 import type { Env, UploadResp, UserInsert, Vars } from "../types";
 import { sendPostmark } from '../lib/email';
 import { showToastError, showToastSuccess, showToastInfo, getSiteUrlByEnv, uploadToCFImages } from '../lib/util';
-import { SignupPage } from '../pages/signup-page';
+import { Err, KVPrfx } from '../constants';
+import { repoLogCreateCrit } from '../repos/log-repo';
 import { repoUserCreate, repoUserCreateEmailVerify, repoUserGetByEmail, repoUserGetByUsername, repoUserUpdate } from '../repos/user-repo';
-import { repoLogCreateCrit, repoLogCreateError } from '../repos/log-repo';
-import { Err, KVPrfx, MDAvatar } from '../constants';
-import { HomePage } from '../pages/home-page';
 import { repoSessionCreateCsrf, repoSessionGetCsrf } from '../repos/session-repo';
+import { HomePage } from '../pages/home-page';
+import { SignupPage } from '../pages/signup-page';
+import { runAntiCsrfChecks } from './_middleware';
 
 const app = new Hono<{ Bindings: Env, Variables: Vars }>();
 
 app.get('/signup', async function (ctx) {
-	console.log('Inside GET/signup route');
+	//console.log('Inside GET/signup route');
 	const tkn = await repoSessionCreateCsrf(ctx);
 	return ctx.html(<SignupPage ctx={ctx} csrfToken={tkn} />);
 });
 
-app.post('/signup', async function (ctx) {
-	console.log('Inside POST/signup route');
+app.post('/signup', runAntiCsrfChecks, async function (ctx) {
+	if (ctx.get('errMssg')) return showToastError(ctx, ctx.get('errMssg'));
 	const body = await ctx.req.parseBody();
 	const username = (body['username'] as string).trim();
 	const email = (body['email'] as string).trim();
 	const plainPass = (body['password'] as string).trim();
 	const confirm = (body['confirm'] as string).trim();
 	const avatar = body['avatar'] as File;
-	const csrfTkn = body['_csrf'] as string;
-	const sessCsrf = await repoSessionGetCsrf(ctx);
-	if (csrfTkn != sessCsrf?.tkn) {
-		console.error(`BAD CSRF TOKEN! Username:${username}, PageTkn:${csrfTkn}, SessTkn:${sessCsrf?.tkn}, IP:${sessCsrf?.ip}`);
-		await repoLogCreateCrit(ctx, Err.InvalidCsrfTkn, username, sessCsrf?.ip);
-	}
 	if (plainPass != confirm) {
 		return showToastInfo(ctx, 'Password and Confirm do not match');
 	}
@@ -94,9 +89,9 @@ app.post('/signup', async function (ctx) {
 	}
 	// Send user email verification token/link
 	const url = getSiteUrlByEnv(ctx);
-	const href = `${url}/verify-email/${userResp.user!.verifyTkn}`;
+	const href = `${url}/signup/verify-email/${userResp.user!.verifyTkn}`;
 	const emailBody = `Please click this link to verify your email address and activate your Late Knight Games new user profile<br/><br/><a href="${href}">Verify this email</a>`;
-	const sendResp = await sendPostmark(ctx, userResp.user!.email, 'Please verify your email', emailBody);
+	const sendResp = await sendPostmark(ctx, userResp.user!.email, 'Please verify your email', emailBody, 'VERIFY-SIGNUP');
 	if (sendResp.ErrorCode > 0) {
 		return showToastError(ctx, sendResp.Message);
 	}
